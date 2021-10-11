@@ -22,66 +22,55 @@ create table auth.SETTING (
 -- NAMESPACE
 
 do $$ begin
-    create domain auth.namespace_t as text
+    create domain auth.namespace_id_t as text
     not null
     default 'dev';
 exception when duplicate_object then null; end; $$;
 
 create table auth.NAMESPACE (
-    id auth.namespace_t primary key
+    id auth.namespace_id_t primary key
 );
 
 create table auth.SETTING_NAMESPACE (
-    namespace auth.namespace_t references auth.namespace(id) on delete cascade,
+    namespace auth.namespace_id_t references auth.namespace(id) on delete cascade,
     key ltree references auth.setting(key) on delete cascade,
     value jsonb,
     unique (namespace, key)
 );
 
 ------------------------------------------------------------------------------
--- NAMESPACE = [SIGNON]
+-- NAMESPACE = [USER]
 
 do $$ begin
-    create domain auth.signon_t as text
+    create domain auth.user_id_t as text
     default md5(uuid_generate_v4()::text);
 exception when duplicate_object then null; end; $$;
 
-create table auth.SIGNON (
-    id auth.signon_t primary key,
-    namespace auth.namespace_t references auth.namespace(id) on delete cascade
+create table auth.user (
+    id auth.user_id_t primary key,
+    namespace auth.namespace_id_t references auth.namespace(id) on delete cascade
 );
 
-create table auth.SETTING_SIGNON (
-    signon_id auth.signon_t references auth.signon(id) on delete cascade,
+create table auth.SETTING_USER (
+    user_id auth.user_id_t references auth.user(id) on delete cascade,
     key ltree references auth.setting(key) on delete cascade,
     value jsonb,
-    unique (signon_id, key)
+    unique (user_id, key)
 );
 
 ------------------------------------------------------------------------------
--- signon = SIGNON -> [SESSION]
+-- signon = USER -> [SESSION]
 
 do $$ begin
-    create domain auth.session_t as text
+    create domain auth.session_id_t as text
     not null
     default md5(uuid_generate_v4()::text);
 exception when duplicate_object then null; end; $$;
 
 create table auth.SESSION (
-    id auth.session_t primary key,
-    signon_id auth.signon_t references auth.signon(id) on delete cascade
+    id auth.session_id_t primary key,
+    user_id auth.user_id_t references auth.user(id) on delete cascade
 );
-
-------------------------------------------------------------------------------
--- auth = SESSION -> AUTH
-
-do $$ begin
-    create domain auth.auth_t as jsonb
-    not null
-    check (
-        value ? 'namespace' and value ? 'signon_id' and value ? 'signon_name'
-    );
-exception when duplicate_object then null; end; $$;
 
 
 ------------------------------------------------------------------------------
@@ -89,7 +78,7 @@ exception when duplicate_object then null; end; $$;
 ------------------------------------------------------------------------------
 
 \ir app/setting.sql
-\ir app/signon.sql
+\ir app/user.sql
 \ir app/session.sql
 
 ------------------------------------------------------------------------------
@@ -105,48 +94,41 @@ exception when duplicate_object then null; end; $$;
 \ir auth.sql
 \ir web/signon.sql
 \ir web/signoff.sql
+\ir web/register.sql
+\ir web/unregister.sql
 
 ------------------------------------------------------------------------------
 -- quick sanity check
 ------------------------------------------------------------------------------
 
 insert into auth.namespace (id) values ('dev');
-insert into auth.signon(name, pwd, role) values ('foo@abc.com', crypt('bar', gen_salt('bf', 8)), 'admin');
+insert into auth.user(name, pwd, role) values ('foo@abc.com', crypt('bar', gen_salt('bf', 8)), 'admin');
 
 insert into auth.setting(key, value) values ('ui.font.size', to_jsonb('14pt'::text));
 insert into auth.setting_namespace(namespace, key, value) values ('dev', 'ui.font.size', to_jsonb('15pt'::text));
-insert into auth.setting_signon(signon_id, key, value) values (auth.signon_id('dev', 'foo@abc.com'), 'ui.font.size', to_jsonb('16pt'::text));
-
-create function auth.register(req jsonb) returns jsonb as $$
-declare
-    signon_name text = req->>'signon_name';
-    signon_pwd text = req->>'signon_pwd';
-    u auth.signon;
-
-begin
-    req = auth.auth(req);
-    insert into auth.signon (namespace, name, pwd)
-        values (req->>'namespace', signon_name, signon_pwd)
-        returning * into u;
-
-
-
-end;
-$$ language plpgsql;
-
-select '----auth', auth.auth(jsonb_build_object());
-
-
+insert into auth.setting_user(user_id, key, value) values (auth.user_id('dev', 'foo@abc.com'), 'ui.font.size', to_jsonb('16pt'::text));
 
 do $$
 declare
     r jsonb;
 begin
     raise warning '------------------------------------------------------------------------------';
+    r = auth.web_register(jsonb_build_object(
+        'namespace', 'dev',
+        'user_name', 'foo2@abc.com',
+        'user_pwd', 'bar'
+    ));
+    raise warning 'register %', jsonb_pretty(r);
+
+    r = auth.web_unregister(jsonb_build_object(
+        'session_id', r->>'session_id'
+    ));
+    raise warning 'unregister %', jsonb_pretty(r);
+
     r = auth.web_signon(jsonb_build_object(
         'namespace', 'dev',
-        'signon_name', 'foo@abc.com',
-        'signon_pwd', 'bar'
+        'user_name', 'foo@abc.com',
+        'user_pwd', 'bar'
     ));
     raise warning 'signon %', jsonb_pretty(r);
 

@@ -6,12 +6,12 @@ declare
     ns_ text;
     id_ text;
     name_ text;
-    role_ auth.signon_role_t;
+    role_ auth.user_role_t;
 begin
     select u.id, u.role, u.name, u.namespace
     into id_, role_, name_, ns_
         from auth.session s
-        join auth.signon u on u.id = s.signon_id
+        join auth.user u on u.id = s.user_id
         where s.id=sid_;
 
     ns_ = coalesce(ns_, req->>'namespace');
@@ -22,10 +22,10 @@ begin
 
     req = req || jsonb_build_object(
         'namespace', ns_,
-        'signon_id', id_,
-        'signon_name', name_,
-        'is_user', (role_ = 'user'::auth.signon_role_t),
-        'is_admin', (role_ = 'admin'::auth.signon_role_t)
+        'user_id', id_,
+        'user_name', name_,
+        'is_user', (role_ = 'user'::auth.user_role_t),
+        'is_admin', (role_ = 'admin'::auth.user_role_t)
     );
 
     call auth.log('authorizing ' || sid_, req);

@@ -5,7 +5,7 @@ begin
     req = auth.auth(req);
     call auth.log('web_signoff', req);
 
-    if req->'signon_id' is null then
+    if req->'user_id' is null then
         raise exception 'error.unrecognized_session';
     end if;
 
