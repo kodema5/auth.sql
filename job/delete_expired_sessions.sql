@@ -12,15 +12,3 @@ begin
     call auth.log(format('deleted %s expired sessions', n));
 end;
 $$ language plpgsql;
-
----------------------------------------------------------------------------
--- at minute 1 minute (of every hour)
-
-select cron.schedule(
-    'auth.delete_expired_sessions',
-    '1 * * * *',
-    'call auth.delete_expired_sessions()'
-);
-
-
-

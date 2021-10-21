@@ -86,6 +86,7 @@ create table auth.SESSION (
 ------------------------------------------------------------------------------
 
 \ir job/delete_expired_sessions.sql
+\ir __cron__.sql
 
 ------------------------------------------------------------------------------
 -- web interface
@@ -96,6 +97,9 @@ create table auth.SESSION (
 \ir web/signoff.sql
 \ir web/register.sql
 \ir web/unregister.sql
+\ir web/namespace_delete.sql
+\ir web/namespace_get.sql
+\ir web/namespace_new.sql
 
 ------------------------------------------------------------------------------
 -- quick sanity check
@@ -145,3 +149,5 @@ $$;
 
 delete from auth.namespace where id='dev'; -- deletes all assets of a namespace
 select ts, msg from auth.log;
+
+call auth.__cron__();

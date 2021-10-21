@@ -30,7 +30,7 @@ alter table auth.USER
 create function auth.user_id (
     ns_ auth.namespace_id_t,
     name_ auth.user_name_t
-) returns auth.user_t
+) returns auth.user_id_t
 as $$
     select id from auth.user where namespace=ns_ and name=name_;
 $$ language sql stable;
