@@ -4,7 +4,6 @@
 create extension if not exists "uuid-ossp" schema public;
 create extension if not exists pgcrypto schema public;
 create extension if not exists ltree schema public;
-create extension if not exists pg_cron schema public;
 
 drop schema if exists auth cascade;
 create schema auth;
@@ -28,11 +27,11 @@ do $$ begin
 exception when duplicate_object then null; end; $$;
 
 create table auth.NAMESPACE (
-    id auth.namespace_id_t primary key
+    id text not null default 'dev' primary key
 );
 
 create table auth.SETTING_NAMESPACE (
-    namespace auth.namespace_id_t references auth.namespace(id) on delete cascade,
+    namespace text references auth.namespace(id) on delete cascade,
     key ltree references auth.setting(key) on delete cascade,
     value jsonb,
     unique (namespace, key)
@@ -41,18 +40,13 @@ create table auth.SETTING_NAMESPACE (
 ------------------------------------------------------------------------------
 -- NAMESPACE = [USER]
 
-do $$ begin
-    create domain auth.user_id_t as text
-    default md5(uuid_generate_v4()::text);
-exception when duplicate_object then null; end; $$;
-
-create table auth.user (
-    id auth.user_id_t primary key,
-    namespace auth.namespace_id_t references auth.namespace(id) on delete cascade
+create table auth.USER (
+    id text default md5(uuid_generate_v4()::text) primary key,
+    namespace text default 'dev' references auth.namespace(id) on delete cascade
 );
 
 create table auth.SETTING_USER (
-    user_id auth.user_id_t references auth.user(id) on delete cascade,
+    user_id text references auth.user(id) on delete cascade,
     key ltree references auth.setting(key) on delete cascade,
     value jsonb,
     unique (user_id, key)
@@ -68,8 +62,8 @@ do $$ begin
 exception when duplicate_object then null; end; $$;
 
 create table auth.SESSION (
-    id auth.session_id_t primary key,
-    user_id auth.user_id_t references auth.user(id) on delete cascade
+    id text not null default md5(uuid_generate_v4()::text) primary key,
+    user_id text references auth.user(id) on delete cascade
 );
 
 
@@ -150,4 +144,4 @@ $$;
 delete from auth.namespace where id='dev'; -- deletes all assets of a namespace
 select ts, msg from auth.log;
 
-call auth.__cron__();
+-- call auth.__cron__();
