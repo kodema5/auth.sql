@@ -12,3 +12,12 @@ begin
     call auth.log(format('deleted %s expired sessions', n));
 end;
 $$ language plpgsql;
+
+---------------------------------------------------------------------------
+-- example: cleanup expired after 1-hr inactive session
+--
+-- select cron.schedule(
+--     'auth.delete_expired_sessions',
+--     '1 * * * *',
+--     'call auth.delete_expired_sessions()'
+-- );
