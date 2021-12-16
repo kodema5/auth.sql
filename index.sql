@@ -7,7 +7,7 @@ create extension if not exists ltree schema public;
 
 ------------------------------------------------------------------------------
 -- DDL section
-\if :test
+\if :local
     drop schema if exists auth_ cascade;
 \endif
 create schema if not exists auth_;
