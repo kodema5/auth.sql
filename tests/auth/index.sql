@@ -19,5 +19,32 @@ begin
 end;
 $$ language plpgsql;
 
+create function tests.session_as_foo_user() returns jsonb as $$
+declare
+    r jsonb;
+begin
+    r = auth.web_signon(jsonb_build_object(
+        'namespace', 'dev',
+        'signon_id', 'foo.user',
+        'signon_key', 'foo.password'
+    ));
+    return jsonb_build_object('session_id', r->'session_id');
+end;
+$$ language plpgsql;
+
+create function tests.session_as_foo_admin() returns jsonb as $$
+declare
+    r jsonb;
+begin
+    r = auth.web_signon(jsonb_build_object(
+        'namespace', 'dev',
+        'signon_id', 'foo.admin',
+        'signon_key', 'foo.password'
+    ));
+    return jsonb_build_object('session_id', r->'session_id');
+end;
+$$ language plpgsql;
+
+\ir change_password.sql
 \ir registration.sql
 \ir signon_signoff.sql

@@ -13,8 +13,6 @@ begin
     , 'foo.user is able to signon');
 
     res = auth.web_signoff(res);
-
-
     return next ok((res->'success')::boolean, 'able to signoff');
 end;
 $$ language plpgsql;

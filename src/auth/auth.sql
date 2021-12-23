@@ -10,7 +10,10 @@ create type auth.auth_t as (
 );
 
 
-create function auth.auth(req jsonb) returns jsonb as $$
+create function auth.auth(
+    req jsonb,
+    is_required boolean default true
+) returns jsonb as $$
 declare
     session_id text = req->>'session_id';
     a auth.auth_t;
@@ -25,7 +28,12 @@ begin
     returning s0.accessed_tz as last_accessed_tz, s1.user_id
     into a.last_accessed_tz, a.user_id;
 
-    if not found then return req; end if;
+    if not found then
+        if is_required then
+            raise exception 'error.auth_unrecognized_session';
+        end if;
+        return req;
+    end if;
 
     select u.role, u.signon_id, u.ns_id
     into a.role, a.signon_id, a.namespace
@@ -43,13 +51,3 @@ end;
 $$ language plpgsql;
 
 
-create function auth.auth_admin(req jsonb) returns jsonb as $$
-begin
-    req = auth.auth(req);
-    if req['_auth'] is null or not req['_auth']['is_admin']::boolean then
-        raise exception 'error.insufficient_previledge';
-    end if;
-
-    return req;
-end;
-$$ language plpgsql;

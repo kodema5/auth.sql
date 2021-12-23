@@ -21,7 +21,17 @@ create schema auth;
 \ir src/auth/index.sql
 
 ------------------------------------------------------------------------------
+-- Admin API section
+
+drop schema if exists auth_admin cascade;
+create schema auth_admin;
+\ir src/auth_admin/index.sql
+
+
+------------------------------------------------------------------------------
 -- TEST section
 \if :test
 \ir tests/auth/index.sql
+\ir tests/auth_admin/index.sql
 \endif
+

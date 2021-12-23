@@ -7,4 +7,4 @@
 
 \ir web_signon.sql
 \ir web_signoff.sql
-
+\ir web_chgpwd.sql
