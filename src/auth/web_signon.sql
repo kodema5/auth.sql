@@ -1,7 +1,8 @@
 create type auth.web_signon_it as (
     namespace text,
     signon_id text,
-    signon_key text
+    signon_key text,
+    setting text
 );
 
 create function auth.web_signon(req jsonb) returns jsonb as $$
@@ -18,6 +19,9 @@ begin
         raise exception 'error.unrecognized_signon';
     end if;
 
-    return to_jsonb(auth.new_session(u.id));
+    return to_jsonb(auth.new_session(
+        u.id,
+        coalesce(it.setting, 'ui.*')
+    ));
 end;
 $$ language plpgsql;

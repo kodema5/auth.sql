@@ -1,3 +1,4 @@
+-- checks session_id variable and adds authentication information
 
 create type auth.auth_t as (
     session_id text,

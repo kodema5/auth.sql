@@ -6,12 +6,15 @@ create type auth.setting_t as (
 create function auth.get_setting (
     setting_keys_ text default 'ui.*',
     ns_id_ text default null,
-    user_id_ text default null
+    user_id text default null
 )
-returns auth.setting_t[]
+returns jsonb
 as $$
 
-    select array_agg((ds.key, coalesce(ss.value, ns.value, ds.value))::auth.setting_t)
+    select jsonb_object_agg(
+        ds.key,
+        coalesce(ss.value, ns.value, ds.value)
+    )
 
     from (
         select s.*
@@ -26,7 +29,7 @@ as $$
 
     left outer join auth_.setting_user ss
         on ss.user_id=(
-            select id from auth_.user where ns_id = ns_id_ and id = user_id_
+            select id from auth_.user where ns_id = ns_id_ and id = user_id
         )
         and ss.key=ds.key;
 

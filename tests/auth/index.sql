@@ -7,6 +7,11 @@ begin
         ('foo.admin', crypt('foo.password', gen_salt('bf', 8)), 'admin'),
         ('foo.system', crypt('foo.password', gen_salt('bf', 8)), 'system');
 
+    insert into auth_.setting (key, value) values
+        ('test.a', to_jsonb(100)),
+        ('test.b', to_jsonb(200)),
+        ('test.c', to_jsonb(300));
+
     return next 'startup-auth';
 
 end;
@@ -48,3 +53,4 @@ $$ language plpgsql;
 \ir change_password.sql
 \ir registration.sql
 \ir signon_signoff.sql
+\ir setting.sql
