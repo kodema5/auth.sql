@@ -1,6 +1,7 @@
 create table if not exists auth_.setting (
     key ltree primary key not null,
-    value jsonb
+    value jsonb,
+    description text default null
 );
 
 

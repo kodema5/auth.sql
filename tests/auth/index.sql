@@ -7,10 +7,10 @@ begin
         ('foo.admin', crypt('foo.password', gen_salt('bf', 8)), 'admin'),
         ('foo.system', crypt('foo.password', gen_salt('bf', 8)), 'system');
 
-    insert into auth_.setting (key, value) values
-        ('test.a', to_jsonb(100)),
-        ('test.b', to_jsonb(200)),
-        ('test.c', to_jsonb(300));
+    insert into auth_.setting (key, value, description) values
+        ('test.a', to_jsonb(100), 'test a'),
+        ('test.b', to_jsonb(200), 'test b'),
+        ('test.c', to_jsonb(300), 'test c');
 
     return next 'startup-auth';
 
