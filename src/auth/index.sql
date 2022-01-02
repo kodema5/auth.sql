@@ -7,7 +7,7 @@
 
 \ir web_signon.sql
 \ir web_signoff.sql
-\ir web_chgpwd.sql
+\ir web_change_password.sql
 
 \ir web_setting_get.sql
 \ir web_setting_put.sql

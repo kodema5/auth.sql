@@ -1,14 +1,13 @@
-create type auth.web_chgpwd_t as (
+create type auth.web_change_password_it as (
     _auth jsonb,
     old_signon_key text,
     new_signon_key text,
     new_signon_key_confirm text
 );
 
-
-create function auth.web_chgpwd (req jsonb) returns jsonb as $$
+create function auth.web_change_password (req jsonb) returns jsonb as $$
 declare
-    it auth.web_chgpwd_t = jsonb_populate_record(null::auth.web_chgpwd_t, auth.auth(req));
+    it auth.web_change_password_it = jsonb_populate_record(null::auth.web_change_password_it, auth.auth(req));
 begin
     if it.old_signon_key is null
         or it.new_signon_key is null
