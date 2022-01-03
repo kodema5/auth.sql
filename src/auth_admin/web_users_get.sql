@@ -1,35 +1,28 @@
 
 create type auth_admin.web_users_it as (
-    _auth jsonb
-);
-
-create type auth_admin.user_t as (
-    id text,
+    _auth auth.auth_t,
     ns_id text,
-    signon_id text,
-    role text
-);
-
-create type auth_admin.web_users_ot as (
-    users auth_admin.user_t[]
+    signon_ids text[],
+    user_ids text[]
 );
 
 
 create function auth_admin.web_users(req jsonb) returns jsonb as $$
 declare
     it auth_admin.web_users_it = jsonb_populate_record(null::auth_admin.web_users_it, auth_admin.auth(req));
-    ot auth_admin.web_users_ot;
+    res jsonb;
 begin
-    select array_agg((
-        u.id,
-        u.ns_id,
-        u.signon_id,
-        u.role
-    )::auth_admin.user_t)
-    into ot.users
-    from auth_.user u;
+    select jsonb_agg(to_jsonb(usr))
+    into res
+    from (
+        select id, ns_id, signon_id, role
+        from auth_.user u
+        where (it.ns_id is null or u.ns_id = it.ns_id)
+        and (it.signon_ids is null or u.signon_id = any(it.signon_ids))
+        and (it.user_ids is null or u.id = any(it.user_ids))
+    ) usr;
 
-    return to_jsonb(ot);
+    return jsonb_build_object('users', res);
 end;
 $$ language plpgsql;
 
