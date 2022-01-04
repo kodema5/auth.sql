@@ -6,7 +6,7 @@ create extension if not exists pgcrypto schema public;
 create extension if not exists ltree schema public;
 
 ------------------------------------------------------------------------------
--- DDL section
+-- ddl section
 \if :local
     drop schema if exists auth_ cascade;
 \endif
@@ -14,24 +14,15 @@ create schema if not exists auth_;
 \ir src/auth_/index.sql
 
 ------------------------------------------------------------------------------
--- API section
+-- user api  section
 
 drop schema if exists auth cascade;
 create schema auth;
 \ir src/auth/index.sql
 
 ------------------------------------------------------------------------------
--- Admin API section
+-- admin api section
 
 drop schema if exists auth_admin cascade;
 create schema auth_admin;
 \ir src/auth_admin/index.sql
-
-
-------------------------------------------------------------------------------
--- TEST section
-\if :test
-\ir tests/auth/index.sql
-\ir tests/auth_admin/index.sql
-\endif
-

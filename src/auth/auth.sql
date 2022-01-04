@@ -7,6 +7,7 @@ create type auth.auth_t as (
     signon_id text,
     role text,
     is_admin boolean,
+    is_system boolean,
     last_accessed_tz timestamp with time zone
 );
 
@@ -45,10 +46,9 @@ begin
 
     a.session_id = session_id;
     a.is_admin = a.role='admin' or a.role='system';
+    a.is_system = a.role='system';
 
     return req
         || jsonb_build_object('_auth', a);
 end;
 $$ language plpgsql;
-
-

@@ -9,7 +9,6 @@ create function auth_admin.web_sessions_delete(req jsonb) returns jsonb as $$
 declare
     it auth_admin.web_sessions_delete_it = jsonb_populate_record(null::auth_admin.web_sessions_delete_it, auth_admin.auth(req));
     n int = 0;
-    i int;
 begin
     if it.session_ids is not null then
         with deleted as (
