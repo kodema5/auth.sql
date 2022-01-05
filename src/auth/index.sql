@@ -8,7 +8,9 @@
 \ir get_setting.sql
 \ir new_session.sql
 
-\ir web_signon_signoff.sql
+\ir web_signon.sql
+\ir web_signoff.sql
 \ir web_change_password.sql
 
-\ir web_setting.sql
+\ir web_setting_get.sql
+\ir web_setting_put.sql

@@ -20,6 +20,12 @@ declare
     session_id text = req->>'session_id';
     a auth.auth_t;
 begin
+    if req is null then
+        if is_required then
+            raise exception 'error.invalid_session';
+        end if;
+        return req;
+    end if;
 
     update auth_.session s1 set accessed_tz = now()
     from (
@@ -32,7 +38,7 @@ begin
 
     if not found then
         if is_required then
-            raise exception 'error.auth_unrecognized_session';
+            raise exception 'error.invalid_session';
         end if;
         return req;
     end if;

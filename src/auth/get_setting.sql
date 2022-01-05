@@ -4,22 +4,20 @@ create type auth.setting_t as (
 );
 
 create function auth.get_setting (
-    setting_keys_ text default 'ui.*',
+    keys_ text[],
     ns_id_ text default null,
     user_id text default null
 )
 returns jsonb
 as $$
-
     select jsonb_object_agg(
         ds.key,
         coalesce(ss.value, ns.value, ds.value)
     )
-
     from (
         select s.*
         from auth_.setting s,
-            ( select unnest (string_to_array(setting_keys_, ',')) ) as keys (k)
+            ( select unnest (keys_) ) as keys (k)
         where s.key ~ (keys.k::lquery)
         order by s.key
     ) ds (key, value)
@@ -33,4 +31,14 @@ as $$
         )
         and ss.key=ds.key;
 
+$$ language sql stable;
+
+create function auth.get_setting (
+    keys_ text default 'ui.*',
+    ns_id_ text default null,
+    user_id text default null
+)
+returns jsonb
+as $$
+    select auth.get_setting(string_to_array(keys_, ','), ns_id_, user_id)
 $$ language sql stable;
