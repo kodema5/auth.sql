@@ -20,7 +20,7 @@ declare
     session_id text = req->>'session_id';
     a auth.auth_t;
 begin
-    if req is null then
+    if req is null or session_id is null then
         if is_required then
             raise exception 'error.invalid_session';
         end if;

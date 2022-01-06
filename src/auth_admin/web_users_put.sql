@@ -12,20 +12,43 @@ create function auth_admin.web_users_put(req jsonb) returns jsonb as $$
 declare
     it auth_admin.web_users_put_it = jsonb_populate_record(null::auth_admin.web_users_put_it, auth_admin.auth(req));
     u auth_.user;
+    pwd text;
 begin
+
     if it.user_id is null then
+
+        if it.namespace is null or not exists (select from auth_.namespace where id=it.namespace)
+        then
+            raise exception 'error.invalid_namespace';
+        end if;
+
+        if it.signon_id is null then
+            raise exception 'error.invalid_signon_id';
+        end if;
+
         insert into auth_.user (ns_id, signon_id, signon_key, role)
         values (
             it.namespace,
             it.signon_id,
-            crypt(it.signon_key, gen_salt('bf', 8)),
+            auth.crypt_signon_key(it.signon_key),
             it.role
         )
         returning * into u;
     else
+
+        if not exists (select from auth_.user where id=it.user_id)
+        then
+            raise exception 'error.invalid_user_id';
+        end if;
+
+        pwd = auth.crypt_signon_key(it.signon_key);
+        if it.signon_key is not null and pwd is null then
+            raise exception 'error.invalid_signon_key';
+        end if;
+
         update auth_.user set
             ns_id = coalesce(it.namespace, ns_id),
-            signon_key = coalesce(crypt(it.signon_key, gen_salt('bf', 8)), signon_key),
+            signon_key = coalesce(auth.crypt_signon_key(it.signon_key), signon_key),
             role = coalesce(it.role, role)
         where id = it.user_id
         returning * into u;
@@ -37,36 +60,16 @@ $$ language plpgsql;
 
 
 
-
--- create type auth_admin.web_users_delete_it as (
---     _auth auth.auth_t,
---     user_ids text[]
--- );
-
--- create function auth_admin.web_users_delete(req jsonb) returns jsonb as $$
--- declare
---     it auth_admin.web_users_delete_it = jsonb_populate_record(null::auth_admin.web_users_delete_it, auth_admin.auth(req));
---     n int;
--- begin
---     with deleted as (
---         delete from auth_.user
---         where id = any(it.user_ids)
---         returning *
---     )
---     select count(1) into n from deleted;
-
---     return jsonb_build_object('deleted', n);
--- end;
--- $$ language plpgsql;
-
-
-
 \if :test
     create function tests.test_auth_admin_web_users_put() returns setof text as $$
     declare
         sid jsonb = tests.session_as_foo_admin();
         a jsonb;
+        uid text;
     begin
+        a = sid;
+        return next throws_ok(format('select auth_admin.web_users_put(%L::jsonb)', a), 'error.invalid_namespace');
+
         a = auth_admin.web_users_put(sid || jsonb_build_object(
             'namespace', 'dev',
             'signon_id', 'foo.test',
@@ -74,21 +77,26 @@ $$ language plpgsql;
             'role', 'user'
         ));
         return next ok(a->'user' is not null, 'can create user');
+        uid = a->'user'->>'id';
 
         a = auth_admin.web_users_put(sid || jsonb_build_object(
-            'user_id', a->'user'->>'id',
+            'user_id', uid,
             'signon_key', 'foo.password2', -- this changes password
             'role', 'admin' -- this changes role
         ));
         return next ok(a->'user'->>'role' = 'admin', 'can update user');
 
-        a = auth_admin.web_users_delete( sid
-            || jsonb_build_object('user_ids', jsonb_build_array(a->'user'->>'id')));
-        return next ok((a->>'deleted')::int = 1, 'able to delete');
 
-        a = auth_admin.web_users_get( sid
-            || jsonb_build_object('signon_ids', jsonb_build_array('foo.test')));
-        return next ok(jsonb_typeof(a->'users')='null', 'foo.test deleted');
+        a = sid || jsonb_build_object(
+            'user_id', 'xxxx'
+        );
+        return next throws_ok(format('select auth_admin.web_users_put(%L::jsonb)', a), 'error.invalid_user_id');
+
+        a = sid || jsonb_build_object(
+            'user_id', uid,
+            'signon_key', 'foo'
+        );
+        return next throws_ok(format('select auth_admin.web_users_put(%L::jsonb)', a), 'error.invalid_signon_key');
     end;
     $$ language plpgsql;
 \endif

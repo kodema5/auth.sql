@@ -7,7 +7,7 @@ create type auth.session_t as (
 
 create function auth.new_session (
     user_id text,
-    setting text default 'ui.*'
+    setting text default null
 )
 returns auth.session_t
 as $$
