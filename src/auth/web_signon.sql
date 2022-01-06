@@ -42,7 +42,7 @@ $$ language plpgsql;
 
 \if :test
 
-    create function tests.test_auth_signon() returns setof text as $$
+    create function tests.test_auth_web_signon() returns setof text as $$
     declare
         a jsonb;
     begin

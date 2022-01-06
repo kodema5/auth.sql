@@ -2,11 +2,12 @@
 \ir scaffolding.sql
 
 \ir crypt_signon_key.sql
-\ir web_register.sql
-\ir web_unregister.sql
-
+\ir get_user_id.sql
 \ir get_setting.sql
 \ir new_session.sql
+
+\ir web_register.sql
+\ir web_unregister.sql
 
 \ir web_signon.sql
 \ir web_signoff.sql

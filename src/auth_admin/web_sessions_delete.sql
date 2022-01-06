@@ -1,26 +1,3 @@
-create type auth_admin.web_sessions_get_it as (
-    _auth auth.auth_t
-);
-
-create function auth_admin.web_sessions_get(req jsonb) returns jsonb as $$
-declare
-    it auth_admin.web_sessions_get_it = jsonb_populate_record(null::auth_admin.web_sessions_get_it, auth_admin.auth(req));
-    res jsonb;
-begin
-    return jsonb_build_object(
-        'sessions',
-        (select jsonb_agg(to_jsonb(a))
-        from (
-            select s.*, u.ns_id, u.signon_id
-            from auth_.session s
-            left outer join auth_.user u on u.id = s.user_id
-        ) a)
-    );
-end;
-$$ language plpgsql;
-
-
-
 create type auth_admin.web_sessions_delete_it as (
     _auth jsonb,
     session_ids text[],
@@ -57,7 +34,7 @@ $$ language plpgsql;
 
 
 \if :test
-    create function tests.test_auth_admin_sessions() returns setof text as $$
+    create function tests.test_auth_admin_web_sessions_delete() returns setof text as $$
     declare
         sid1 jsonb = tests.session_as_foo_admin();
         sid2 jsonb = tests.session_as_foo_user();

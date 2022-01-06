@@ -20,7 +20,7 @@ $$ language plpgsql;
 
 
 \if :test
-    create function tests.test_auth_signoff() returns setof text as $$
+    create function tests.test_auth_web_signoff() returns setof text as $$
     declare
         a jsonb;
     begin

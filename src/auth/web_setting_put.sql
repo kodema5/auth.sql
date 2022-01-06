@@ -35,7 +35,7 @@ $$ language plpgsql;
 
 
 \if :test
-    create function tests.test_auth_setting() returns setof text as $$
+    create function tests.test_web_auth_setting() returns setof text as $$
     declare
         sid jsonb = tests.session_as_foo_user();
         a jsonb;

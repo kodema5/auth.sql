@@ -50,7 +50,7 @@ $$ language plpgsql;
 
 
 \if :test
-    create function tests.test_auth_register() returns setof text as $$
+    create function tests.test_auth_web_register() returns setof text as $$
     declare
         a jsonb;
     begin
