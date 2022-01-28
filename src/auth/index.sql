@@ -15,3 +15,6 @@
 
 \ir web_setting_get.sql
 \ir web_setting_put.sql
+
+\ir web_userdata_get.sql
+\ir web_userdata_put.sql
