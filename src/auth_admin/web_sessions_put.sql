@@ -1,3 +1,4 @@
+-- allows admin to work as user
 
 create type auth_admin.web_sessions_put_it as (
     _auth auth.auth_t,
@@ -5,18 +6,60 @@ create type auth_admin.web_sessions_put_it as (
 );
 
 
-create function auth_admin.web_sessions_put(req jsonb) returns jsonb as $$
+create type auth_admin.web_sessions_put_t as (
+    session_id text,
+    setting jsonb
+);
+
+create function auth_admin.web_sessions_put(
+    it auth_admin.web_sessions_put_it )
+returns auth_admin.web_sessions_put_t
+as $$
 declare
-    it auth_admin.web_sessions_put_it = jsonb_populate_record(null::auth_admin.web_sessions_put_it, auth_admin.auth(req));
-    res jsonb;
+    a auth_admin.web_sessions_put_t;
+    u auth_.user;
+    s auth_.session;
 begin
-    if it.user_id is null or not exists (select from auth_.user where id=it.user_id) then
+    if it.user_id is null
+    then
         raise exception 'error.invalid_user_id';
     end if;
 
-    return to_jsonb(auth.new_session(it.user_id));
+    select *
+    into u
+    from auth_.user
+    where id = it.user_id;
+
+    if not found then
+        raise exception 'error.invalid_user_id';
+    end if;
+
+
+    insert into auth_.session (user_id)
+    values (u.id)
+    returning *
+    into s;
+
+    a.session_id = s.id;
+    a.setting = auth.get_setting(
+        null,
+        u.ns_id,
+        u.id
+    );
+    return a;
 end;
 $$ language plpgsql;
+
+
+create function auth_admin.web_sessions_put ( req jsonb )
+returns jsonb
+as $$
+    select to_jsonb(auth_admin.web_sessions_put (
+        jsonb_populate_record(
+            null::auth_admin.web_sessions_put_it,
+            auth_admin.auth(req))
+    ))
+$$ language sql stable;
 
 
 \if :test

@@ -4,9 +4,16 @@ create type auth_admin.web_sessions_delete_it as (
     user_ids text[]
 );
 
-create function auth_admin.web_sessions_delete(req jsonb) returns jsonb as $$
+create type auth_admin.web_sessions_delete_t as (
+    deleted int
+);
+
+create function auth_admin.web_sessions_delete(
+    it auth_admin.web_sessions_delete_it)
+returns auth_admin.web_sessions_delete_t
+as $$
 declare
-    it auth_admin.web_sessions_delete_it = jsonb_populate_record(null::auth_admin.web_sessions_delete_it, auth_admin.auth(req));
+    a auth_admin.web_sessions_delete_t;
     n int = 0;
 begin
     if it.session_ids is not null then
@@ -15,7 +22,9 @@ begin
             where id = any(it.session_ids)
             returning *
         )
-        select (n + count(1)) into n from deleted;
+        select (n + count(1))
+        into n
+        from deleted;
     end if;
 
     if it.user_ids is not null then
@@ -24,13 +33,26 @@ begin
             where user_id = any(it.user_ids)
             returning *
         )
-        select (n + count(1)) into n from deleted;
+        select (n + count(1))
+        into n
+        from deleted;
     end if;
 
-    return jsonb_build_object('deleted', n);
+    a.deleted = n;
+    return a;
 end;
 $$ language plpgsql;
 
+
+create function auth_admin.web_sessions_delete(req jsonb)
+returns jsonb
+as $$
+    select to_jsonb(auth_admin.web_sessions_delete(
+        jsonb_populate_record(
+            null::auth_admin.web_sessions_delete_it,
+            auth_admin.auth(req))
+    ))
+$$ language sql stable;
 
 
 \if :test

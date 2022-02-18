@@ -3,23 +3,38 @@ create type auth_admin.web_sessions_get_it as (
     namespace text
 );
 
-create function auth_admin.web_sessions_get(req jsonb) returns jsonb as $$
+create type auth_admin.web_sessions_get_t as (
+    sessions jsonb
+);
+
+create function auth_admin.web_sessions_get (
+    it auth_admin.web_sessions_get_it)
+returns auth_admin.web_sessions_get_t
+as $$
 declare
-    it auth_admin.web_sessions_get_it = jsonb_populate_record(null::auth_admin.web_sessions_get_it, auth_admin.auth(req));
-    res jsonb;
+    a auth_admin.web_sessions_get_t;
 begin
-    return jsonb_build_object(
-        'sessions',
-        (select jsonb_agg(to_jsonb(a))
-        from (
-            select s.*, u.ns_id, u.signon_id
-            from auth_.session s
-            left join auth_.user u on u.id = s.user_id
-                and (it.namespace is null or u.ns_id=it.namespace)
-        ) a)
-    );
+    select jsonb_agg(to_jsonb(s))
+    into a.sessions
+    from (
+        select s.*, u.ns_id, u.signon_id
+        from auth_.session s
+        left join auth_.user u on u.id = s.user_id
+            and (it.namespace is null or u.ns_id=it.namespace)
+    ) s;
+    return a;
 end;
 $$ language plpgsql;
+
+
+create function auth_admin.web_sessions_get(req jsonb)
+returns jsonb as $$
+    select to_jsonb(auth_admin.web_sessions_get(
+        jsonb_populate_record(
+            null::auth_admin.web_sessions_get_it,
+            auth_admin.auth(req))
+    ))
+$$ language sql stable;
 
 
 \if :test

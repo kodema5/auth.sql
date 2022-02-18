@@ -7,12 +7,14 @@
         insert into auth_.user (signon_id, signon_key, role) values
             ('foo.user', crypt('foo.password', gen_salt('bf', 8)), 'user'),
             ('foo.admin', crypt('foo.password', gen_salt('bf', 8)), 'admin'),
-            ('foo.system', crypt('foo.password', gen_salt('bf', 8)), 'system');
+            ('foo.system', crypt('foo.password', gen_salt('bf', 8)), 'system')
+        on conflict do nothing;
 
         insert into auth_.setting (key, value, description) values
             ('test.a', to_jsonb(100), 'test a'),
             ('test.b', to_jsonb(200), 'test b'),
-            ('test.c', to_jsonb(300), 'test c');
+            ('test.c', to_jsonb(300), 'test c')
+        on conflict do nothing;
 
         return next 'startup-auth';
 

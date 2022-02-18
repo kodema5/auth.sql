@@ -6,14 +6,26 @@ create type auth_admin.web_users_get_it as (
     user_ids text[]
 );
 
+create type auth_admin.web_users_get_user_info_t as (
+    user_id text,
+    namespace text,
+    signon_id text,
+    role text
+);
 
-create function auth_admin.web_users_get(req jsonb) returns jsonb as $$
+create type auth_admin.web_users_get_t as (
+    users auth_admin.web_users_get_user_info_t[]
+);
+
+create function auth_admin.web_users_get(
+    it auth_admin.web_users_get_it)
+returns auth_admin.web_users_get_t
+as $$
 declare
-    it auth_admin.web_users_get_it = jsonb_populate_record(null::auth_admin.web_users_get_it, auth_admin.auth(req));
-    res jsonb;
+    a auth_admin.web_users_get_t;
 begin
-    select jsonb_agg(to_jsonb(usr))
-    into res
+    select array_agg(usr)
+    into a.users
     from (
         select id, ns_id, signon_id, role
         from auth_.user u
@@ -22,10 +34,20 @@ begin
         and (it.user_ids is null or u.id = any(it.user_ids))
     ) usr;
 
-    return jsonb_build_object('users', res);
+    return a;
 end;
 $$ language plpgsql;
 
+
+create function auth_admin.web_users_get (req jsonb)
+returns jsonb
+as $$
+    select to_jsonb(auth_admin.web_users_get(
+        jsonb_populate_record(
+            null::auth_admin.web_users_get_it,
+            auth_admin.auth(req))
+    ))
+$$ language sql stable;
 
 
 \if :test

@@ -7,22 +7,33 @@ create type auth_admin.web_users_put_it as (
     role text
 );
 
--- insert or update
-create function auth_admin.web_users_put(req jsonb) returns jsonb as $$
+create type auth_admin.web_users_put_t as (
+    "user" auth_.user
+);
+
+create function auth_admin.web_users_put (
+    it auth_admin.web_users_put_it)
+returns auth_admin.web_users_put_t
+as $$
 declare
-    it auth_admin.web_users_put_it = jsonb_populate_record(null::auth_admin.web_users_put_it, auth_admin.auth(req));
+    a auth_admin.web_users_put_t;
     u auth_.user;
     pwd text;
 begin
+    -- create a new user?
+    if it.user_id is null
+    then
 
-    if it.user_id is null then
-
-        if it.namespace is null or not exists (select from auth_.namespace where id=it.namespace)
+        if it.namespace is null
+            or not exists (
+                select from auth_.namespace
+                where id=it.namespace)
         then
             raise exception 'error.invalid_namespace';
         end if;
 
-        if it.signon_id is null then
+        if it.signon_id is null
+        then
             raise exception 'error.invalid_signon_id';
         end if;
 
@@ -33,31 +44,53 @@ begin
             auth.crypt_signon_key(it.signon_key),
             it.role
         )
-        returning * into u;
+        returning *
+        into u;
+
+    -- updates existing user?
     else
 
-        if not exists (select from auth_.user where id=it.user_id)
+        if not exists (
+            select from auth_.user
+            where id=it.user_id)
         then
             raise exception 'error.invalid_user_id';
         end if;
 
         pwd = auth.crypt_signon_key(it.signon_key);
-        if it.signon_key is not null and pwd is null then
+
+        if it.signon_key is not null
+            and pwd is null
+        then
             raise exception 'error.invalid_signon_key';
         end if;
 
         update auth_.user set
             ns_id = coalesce(it.namespace, ns_id),
-            signon_key = coalesce(auth.crypt_signon_key(it.signon_key), signon_key),
+            signon_key = coalesce(
+                auth.crypt_signon_key(it.signon_key),
+                signon_key),
             role = coalesce(it.role, role)
         where id = it.user_id
-        returning * into u;
+        returning *
+        into u;
     end if;
 
-    return jsonb_build_object('user', u);
+    a.user = u;
+    return a;
 end;
 $$ language plpgsql;
 
+
+create function auth_admin.web_users_put (req jsonb)
+returns jsonb
+as $$
+    select to_jsonb(auth_admin.web_users_put(
+        jsonb_populate_record(
+            null::auth_admin.web_users_put_it,
+            auth_admin.auth(req))
+    ))
+$$ language sql stable;
 
 
 \if :test

@@ -3,21 +3,40 @@ create type auth_admin.web_users_delete_it as (
     user_ids text[]
 );
 
-create function auth_admin.web_users_delete(req jsonb) returns jsonb as $$
+create type auth_admin.web_users_delete_t as (
+    deleted int
+);
+
+create function auth_admin.web_users_delete(
+    it auth_admin.web_users_delete_it)
+returns auth_admin.web_users_delete_t
+as $$
 declare
-    it auth_admin.web_users_delete_it = jsonb_populate_record(null::auth_admin.web_users_delete_it, auth_admin.auth(req));
-    n int;
+    a auth_admin.web_users_delete_t;
 begin
     with deleted as (
         delete from auth_.user
         where id = any(it.user_ids)
         returning *
     )
-    select count(1) into n from deleted;
+    select count(1)
+    into a.deleted
+    from deleted;
 
-    return jsonb_build_object('deleted', n);
+    return a;
 end;
 $$ language plpgsql;
+
+
+create function auth_admin.web_users_delete (req jsonb)
+returns jsonb
+as $$
+    select to_jsonb(auth_admin.web_users_delete(
+        jsonb_populate_record(
+            null::auth_admin.web_users_delete_it,
+            auth_admin.auth(req))
+    ))
+$$ language sql stable;
 
 
 \if :test

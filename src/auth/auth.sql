@@ -21,10 +21,10 @@ create function auth.auth (
 )
 returns auth.auth_t as $$
 declare
-    session_id text = req.session_id;
+    sid text = req.session_id;
     a auth.auth_t;
 begin
-    if req is null or session_id is null then
+    if req is null or sid is null then
         if required then
             raise exception 'error.invalid_session';
         end if;
@@ -36,7 +36,7 @@ begin
     from (
         select id, accessed_tz
         from auth_.session
-        where id = session_id
+        where id = sid
         for update
     ) s0
     where s1.id = s0.id
@@ -60,7 +60,7 @@ begin
         return null;
     end if;
 
-    a.session_id = session_id;
+    a.session_id = sid;
     a.is_admin = a.role='admin' or a.role='system';
     a.is_system = a.role='system';
     return a;

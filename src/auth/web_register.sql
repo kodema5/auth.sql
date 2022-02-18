@@ -5,18 +5,28 @@ create type auth.web_register_it as (
     signon_id text,
     signon_key text,
     signon_key_confirm text
-
 );
 
--- returns auth.new_session_t
+create type auth.web_register_t as (
+    session_id text,
+    setting jsonb
+);
 
-create function auth.web_register(req jsonb) returns jsonb as $$
+create function auth.web_register (
+    it auth.web_register_it
+)
+returns auth.web_register_t
+as $$
 declare
-    it auth.web_register_it = jsonb_populate_record(null::auth.web_register_it, req);
+    a auth.web_register_t;
     u auth_.user;
+    s auth_.session;
     pwd text;
 begin
-    if not exists (select from auth_.namespace where id=it.namespace)
+
+    if not exists (
+        select from auth_.namespace
+        where id = it.namespace)
     then
         raise exception 'error.invalid_namespace';
     end if;
@@ -25,30 +35,57 @@ begin
         raise exception 'error.invalid_signon_id';
     end if;
 
-    if exists (select from auth_.user where ns_id=it.namespace and signon_id=it.signon_id) then
+    if exists (
+        select from auth_.user
+        where ns_id=it.namespace
+        and signon_id=it.signon_id)
+    then
         raise exception 'error.signon_id_exists';
     end if;
 
     pwd = auth.crypt_signon_key(it.signon_key);
-    if pwd is null then
+    if pwd is null
+    then
         raise exception 'error.invalid_signon_key';
     end if;
 
-    if it.signon_key <> it.signon_key_confirm then
+    if it.signon_key <> it.signon_key_confirm
+    then
         raise exception 'error.invalid_signon_key_confirm';
     end if;
 
-    insert into auth_.user (ns_id, signon_id, signon_key)
-        values (
-            it.namespace,
-            it.signon_id,
-            pwd
-        )
-        returning * into u;
 
-    return to_jsonb(auth.new_session(u.id));
+    insert into auth_.user (ns_id, signon_id, signon_key)
+    values (
+        it.namespace,
+        it.signon_id,
+        pwd)
+    returning *
+    into u;
+
+    insert into auth_.session (user_id)
+    values (u.id)
+    returning *
+    into s;
+
+    a.session_id = s.id;
+    a.setting = auth.get_setting(
+        null,
+        u.ns_id,
+        u.id
+    );
+    return a;
 end;
 $$ language plpgsql;
+
+
+create function auth.web_register ( req jsonb )
+returns jsonb
+as $$
+    select to_jsonb(auth.web_register(
+        jsonb_populate_record(null::auth.web_register_it, req)
+    ))
+$$ language sql stable;
 
 
 \if :test
@@ -56,7 +93,7 @@ $$ language plpgsql;
     declare
         a jsonb;
     begin
-        return next throws_ok(format('select auth.web_register(null)', a), 'error.invalid_namespace');
+        return next throws_ok(format('select auth.web_register(null::jsonb)', a), 'error.invalid_namespace');
 
         a = jsonb_build_object(
             'namespace', 'dev'

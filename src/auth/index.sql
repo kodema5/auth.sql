@@ -4,7 +4,6 @@
 \ir crypt_signon_key.sql
 \ir get_user_id.sql
 \ir get_setting.sql
-\ir new_session.sql
 
 \ir web_register.sql
 \ir web_unregister.sql
