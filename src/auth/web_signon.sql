@@ -1,3 +1,4 @@
+--
 create type auth.web_signon_it as (
     _auth auth.auth_t,
     namespace text,
@@ -5,6 +6,8 @@ create type auth.web_signon_it as (
     signon_key text,
     setting text
 );
+
+-- returns auth.new_session_t
 
 create function auth.web_signon(req jsonb) returns jsonb as $$
 declare

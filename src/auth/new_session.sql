@@ -1,21 +1,20 @@
-create type auth.session_t as (
+create type auth.new_session_t as (
     session_id text,
     signon_id text,
     setting jsonb
 );
 
-
 create function auth.new_session (
     user_id text,
     setting text default null
 )
-returns auth.session_t
+returns auth.new_session_t
 as $$
 declare
     res jsonb = '{}'::jsonb;
     u auth_.user;
     s auth_.session;
-    a auth.session_t;
+    a auth.new_session_t;
 begin
     select * into u from auth_.user where id = user_id limit 1;
     if not found then

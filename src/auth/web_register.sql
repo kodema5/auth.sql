@@ -8,6 +8,8 @@ create type auth.web_register_it as (
 
 );
 
+-- returns auth.new_session_t
+
 create function auth.web_register(req jsonb) returns jsonb as $$
 declare
     it auth.web_register_it = jsonb_populate_record(null::auth.web_register_it, req);

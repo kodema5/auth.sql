@@ -1,19 +1,36 @@
+-- returns user's settings with keys
+
 create type auth.web_setting_get_it as (
     _auth auth.auth_t,
-    keys text[] -- pass 'prefix.*,prefix.*'
+    keys text[]         -- pass 'prefix.*,prefix.*'
 );
 
-create function auth.web_setting_get(req jsonb) returns jsonb as $$
-declare
-    it auth.web_setting_get_it = jsonb_populate_record(null::auth.web_setting_get_it, auth.auth(req));
-begin
-    return jsonb_build_object('setting', auth.get_setting(
+create type auth.web_setting_get_t as (
+    setting jsonb
+);
+
+create function auth.web_setting_get (
+    it auth.web_setting_get_it
+)
+returns auth.web_setting_get_t
+as $$
+    select (auth.get_setting(
         it.keys,
         (it._auth).namespace,
         (it._auth).user_id
-    ));
-end;
-$$ language plpgsql;
+    ))
+$$ language sql stable;
+
+
+create function auth.web_setting_get(req jsonb)
+returns jsonb
+as $$
+    select to_jsonb(auth.web_setting_get(
+        jsonb_populate_record(
+            null::auth.web_setting_get_it,
+            auth.auth(req))
+    ))
+$$ language sql stable;
 
 
 
@@ -23,8 +40,6 @@ $$ language plpgsql;
         sid jsonb = tests.session_as_foo_user();
         a jsonb;
     begin
-        return next throws_ok('select auth.web_setting_get(null)', 'error.invalid_session');
-
         a = auth.web_setting_get(sid);
         return next ok(jsonb_typeof(a->'setting') = 'null', 'returns null');
 

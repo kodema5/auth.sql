@@ -4,9 +4,18 @@ create type auth.web_unregister_it as (
     signon_key_confirm text
 );
 
-create function auth.web_unregister(req jsonb) returns jsonb as $$
+
+create type auth.web_unregister_t as (
+    success boolean
+);
+
+create function auth.web_unregister(
+    it auth.web_unregister_it
+)
+returns auth.web_unregister_t
+as $$
 declare
-    it auth.web_unregister_it = jsonb_populate_record(null::auth.web_unregister_it, auth.auth(req));
+    a auth.web_unregister_t;
 begin
     if it._auth is null then
         raise exception 'error.invalid_session';
@@ -24,15 +33,27 @@ begin
         raise exception 'error.invalid_signon_key_confirm';
     end if;
 
+    delete from auth_.session
+    where id = (it._auth).session_id;
 
-    delete from auth_.session where id = (it._auth).session_id;
+    delete from auth_.user
+    where signon_id = (it._auth).signon_id;
 
-    delete from auth_.user where signon_id = (it._auth).signon_id;
-
-    return jsonb_build_object('success', true);
+    a.success = true;
+    return a;
 end;
 $$ language plpgsql;
 
+
+create function auth.web_unregister(req jsonb)
+returns jsonb
+as $$
+    select to_jsonb(auth.web_unregister(
+        jsonb_populate_record(
+            null::auth.web_unregister_it,
+            auth.auth(req))
+    ))
+$$ language sql stable;
 
 
 \if :test

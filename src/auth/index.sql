@@ -1,5 +1,5 @@
 \ir auth.sql
-\ir scaffolding.sql
+\ir test_init.sql
 
 \ir crypt_signon_key.sql
 \ir get_user_id.sql

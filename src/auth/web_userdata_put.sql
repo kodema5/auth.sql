@@ -3,12 +3,18 @@ create type auth.web_userdata_put_it as (
     userdata jsonb
 );
 
-create function auth.web_userdata_put(req jsonb) returns jsonb as $$
-declare
-    it auth.web_userdata_put_it = jsonb_populate_record(null::auth.web_userdata_put_it, auth.auth(req));
-    res jsonb;
-begin
+create type auth.web_userdata_put_t as (
+    userdata jsonb
+);
 
+create function auth.web_userdata_put(
+    it auth.web_userdata_put_it
+)
+returns auth.web_userdata_put_t
+as $$
+declare
+    a auth.web_userdata_put_t;
+begin
     with updated as (
         insert into auth_.userdata (user_id, key, value)
             (
@@ -20,19 +26,30 @@ begin
         returning *
     )
     select jsonb_object_agg(u.key, u.value)
-    into res
+    into a.userdata
     from updated u;
 
-    delete from auth_.userdata where user_id = (it._auth).user_id and (value)::text = 'null';
+    delete from auth_.userdata
+    where user_id = (it._auth).user_id
+    and (value)::text = 'null';
 
-    return jsonb_build_object('userdata', res);
+    return a;
 end;
 $$ language plpgsql;
 
 
+create function auth.web_userdata_put(req jsonb)
+returns jsonb as $$
+    select to_jsonb(auth.web_userdata_put(
+        jsonb_populate_record(
+            null::auth.web_userdata_put_it,
+            auth.auth(req))
+    ))
+$$ language sql stable;
+
 
 \if :test
-    create function tests.test_web_auth_userdata() returns setof text as $$
+    create function tests.test_auth_web_userdata() returns setof text as $$
     declare
         sid jsonb = tests.session_as_foo_user();
         a jsonb;

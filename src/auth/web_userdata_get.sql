@@ -3,16 +3,37 @@ create type auth.web_userdata_get_it as (
     keys text[] -- pass 'prefix.*,prefix.*'
 );
 
-create function auth.web_userdata_get(req jsonb) returns jsonb as $$
+create type auth.web_userdata_get_t as (
+    userdata jsonb
+);
+
+create function auth.web_userdata_get(
+    it auth.web_userdata_get_it
+)
+returns auth.web_userdata_get_t
+as $$
 declare
-    it auth.web_userdata_get_it = jsonb_populate_record(null::auth.web_userdata_get_it, auth.auth(req));
+    a auth.web_userdata_get_t;
 begin
-    return jsonb_build_object('userdata', (
-        select jsonb_object_agg ( ud.key::text, ud.value )
-        from auth_.userdata ud,
-            ( select unnest (it.keys) ) as keys (k)
-        where ud.key ~ (keys.k::lquery)
-        and ud.user_id = (it._auth).user_id
-    ));
+    select jsonb_object_agg ( ud.key::text, ud.value )
+    into a.userdata
+    from auth_.userdata ud,
+        ( select unnest (it.keys) ) as keys (k)
+    where ud.key ~ (keys.k::lquery)
+    and ud.user_id = (it._auth).user_id;
+
+    return a;
 end;
 $$ language plpgsql;
+
+
+create function auth.web_userdata_get (req jsonb)
+returns jsonb
+as $$
+    select to_jsonb(auth.web_userdata_get(
+        jsonb_populate_record(
+            null::auth.web_userdata_get_it,
+            auth.auth(req))
+    ))
+$$ language sql stable;
+

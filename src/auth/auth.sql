@@ -1,5 +1,9 @@
 -- checks session_id variable and adds authentication information
 
+create type auth.auth_it as (
+    session_id text
+);
+
 create type auth.auth_t as (
     session_id text,
     namespace text,
@@ -11,50 +15,68 @@ create type auth.auth_t as (
     last_accessed_tz timestamp with time zone
 );
 
-
-create function auth.auth(
-    req jsonb,
-    is_required boolean default true
-) returns jsonb as $$
+create function auth.auth (
+    req auth.auth_it,
+    required boolean default true
+)
+returns auth.auth_t as $$
 declare
-    session_id text = req->>'session_id';
+    session_id text = req.session_id;
     a auth.auth_t;
 begin
     if req is null or session_id is null then
-        if is_required then
+        if required then
             raise exception 'error.invalid_session';
         end if;
-        return req;
+        return null;
     end if;
 
-    update auth_.session s1 set accessed_tz = now()
+    update auth_.session s1
+    set accessed_tz = now()
     from (
-        select id, accessed_tz from auth_.session
-        where id=session_id for update
+        select id, accessed_tz
+        from auth_.session
+        where id = session_id
+        for update
     ) s0
     where s1.id = s0.id
-    returning s0.accessed_tz as last_accessed_tz, s1.user_id
-    into a.last_accessed_tz, a.user_id;
+    returning s0.accessed_tz
+        as last_accessed_tz, s1.user_id
+        into a.last_accessed_tz, a.user_id;
 
     if not found then
-        if is_required then
+        if required then
             raise exception 'error.invalid_session';
         end if;
-        return req;
+        return null;
     end if;
 
     select u.role, u.signon_id, u.ns_id
     into a.role, a.signon_id, a.namespace
-        from auth_.user u
-        where u.id = a.user_id;
+    from auth_.user u
+    where u.id = a.user_id;
 
-    if not found then return req; end if;
+    if not found then
+        return null;
+    end if;
 
     a.session_id = session_id;
     a.is_admin = a.role='admin' or a.role='system';
     a.is_system = a.role='system';
-
-    return req
-        || jsonb_build_object('_auth', a);
+    return a;
 end;
 $$ language plpgsql;
+
+
+create function auth.auth (
+    req jsonb,
+    required boolean default true
+)
+returns jsonb as $$
+    select req
+        || jsonb_build_object(
+            '_auth',
+            auth.auth(
+                jsonb_populate_record(null::auth.auth_it, req),
+                required))
+$$ language sql stable;

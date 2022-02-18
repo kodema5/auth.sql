@@ -1,14 +1,23 @@
+
 create type auth.web_setting_put_it as (
     _auth auth.auth_t,
     setting jsonb
 );
 
-create function auth.web_setting_put(req jsonb) returns jsonb as $$
-declare
-    it auth.web_setting_put_it = jsonb_populate_record(null::auth.web_setting_put_it, auth.auth(req));
-    res jsonb;
-begin
 
+create type auth.web_setting_put_t as (
+    setting jsonb
+);
+
+
+create function auth.web_setting_put(
+    it auth.web_setting_put_it
+)
+returns auth.web_setting_put_t
+as $$
+declare
+    a auth.web_setting_put_t;
+begin
     with updated as (
         insert into auth_.setting_user (user_id, key, value)
             (
@@ -21,21 +30,31 @@ begin
         returning *
     )
     select jsonb_object_agg(u.key, u.value)
-    into res
+    into a.setting
     from updated u;
+
 
     delete from auth_.setting_user
     where user_id = (it._auth).user_id
         and (value)::text = 'null';
 
-    return jsonb_build_object('setting', res);
+    return a;
 end;
 $$ language plpgsql;
 
 
+create function auth.web_setting_put(req jsonb) returns jsonb as $$
+    select to_jsonb(auth.web_setting_put(
+        jsonb_populate_record(
+            null::auth.web_setting_put_it,
+            auth.auth(req))
+    ))
+$$ language sql stable;
+
+
 
 \if :test
-    create function tests.test_web_auth_setting() returns setof text as $$
+    create function tests.test_auth_web_setting_put() returns setof text as $$
     declare
         sid jsonb = tests.session_as_foo_user();
         a jsonb;

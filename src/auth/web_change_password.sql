@@ -5,9 +5,17 @@ create type auth.web_change_password_it as (
     new_signon_key_confirm text
 );
 
-create function auth.web_change_password (req jsonb) returns jsonb as $$
+create type auth.web_change_password_t as (
+    success boolean
+);
+
+create function auth.web_change_password (
+    it auth.web_change_password_it
+)
+returns auth.web_change_password_t
+as $$
 declare
-    it auth.web_change_password_it = jsonb_populate_record(null::auth.web_change_password_it, auth.auth(req));
+    a auth.web_change_password_t;
 begin
     if it.old_signon_key is null
         or it.new_signon_key is null
@@ -30,10 +38,20 @@ begin
     set signon_key = crypt(it.new_signon_key, gen_salt('bf', 8))
     where id = it._auth->>'user_id';
 
-    return jsonb_build_object('success', true);
+    a.success = true;
+    return a;
 end;
 $$ language plpgsql;
 
+
+create function auth.web_change_password (req jsonb)
+returns jsonb as $$
+    select to_jsonb(auth.web_change_password(
+        jsonb_populate_record(
+            null::auth.web_change_password_it,
+            auth.auth(req))
+    ))
+$$ language sql stable;
 
 
 \if :test
