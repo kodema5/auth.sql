@@ -8,9 +8,12 @@ create type auth_admin.web_sessions_delete_t as (
     deleted int
 );
 
-create function auth_admin.web_sessions_delete(
-    it auth_admin.web_sessions_delete_it)
-returns auth_admin.web_sessions_delete_t
+create function auth_admin.web_sessions_delete (
+    it auth_admin.web_sessions_delete_it
+)
+    returns auth_admin.web_sessions_delete_t
+    language plpgsql
+    security definer
 as $$
 declare
     a auth_admin.web_sessions_delete_t;
@@ -41,22 +44,29 @@ begin
     a.deleted = n;
     return a;
 end;
-$$ language plpgsql;
+$$;
 
 
-create function auth_admin.web_sessions_delete(req jsonb)
-returns jsonb
+create function auth_admin.web_sessions_delete(
+    req jsonb
+)
+    returns jsonb
+    language sql
+    security definer
 as $$
     select to_jsonb(auth_admin.web_sessions_delete(
         jsonb_populate_record(
             null::auth_admin.web_sessions_delete_it,
             auth_admin.auth(req))
     ))
-$$ language sql stable;
+$$;
 
 
 \if :test
-    create function tests.test_auth_admin_web_sessions_delete() returns setof text as $$
+    create function tests.test_auth_admin_web_sessions_delete()
+        returns setof text
+        language plpgsql
+    as $$
     declare
         sid1 jsonb = tests.session_as_foo_admin();
         sid2 jsonb = tests.session_as_foo_user();
@@ -77,5 +87,5 @@ $$ language sql stable;
         return next ok((res->'deleted')::numeric = 1, 'delete session with signon-id');
 
     end;
-    $$ language plpgsql;
+    $$;
 \endif

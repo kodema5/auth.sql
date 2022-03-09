@@ -8,7 +8,10 @@ create function auth.get_setting (
     ns_id_ text default null,
     user_id text default null
 )
-returns jsonb
+    returns jsonb
+    language sql
+    security definer
+    stable
 as $$
     select jsonb_object_agg(
         ds.key,
@@ -31,14 +34,17 @@ as $$
         )
         and ss.key=ds.key;
 
-$$ language sql stable;
+$$;
 
 create function auth.get_setting (
     keys_ text default 'ui.*',
     ns_id_ text default null,
     user_id text default null
 )
-returns jsonb
+    returns jsonb
+    language sql
+    security definer
+    stable
 as $$
     select auth.get_setting(string_to_array(keys_, ','), ns_id_, user_id)
-$$ language sql stable;
+$$;

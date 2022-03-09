@@ -1,4 +1,10 @@
-create function auth.crypt_signon_key (key text) returns text as $$
+create function auth.crypt_signon_key (
+    key text
+)
+    returns text
+    language plpgsql
+    security definer
+as $$
 begin
     if key is null or length(key)<8 then
         return null;
@@ -6,4 +12,4 @@ begin
 
     return crypt(key, gen_salt('bf', 8));
 end;
-$$ language plpgsql;
+$$;

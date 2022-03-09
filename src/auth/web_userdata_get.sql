@@ -10,7 +10,9 @@ create type auth.web_userdata_get_t as (
 create function auth.web_userdata_get(
     it auth.web_userdata_get_it
 )
-returns auth.web_userdata_get_t
+    returns auth.web_userdata_get_t
+    language plpgsql
+    security definer
 as $$
 declare
     a auth.web_userdata_get_t;
@@ -24,16 +26,20 @@ begin
 
     return a;
 end;
-$$ language plpgsql;
+$$;
 
 
-create function auth.web_userdata_get (req jsonb)
-returns jsonb
+create function auth.web_userdata_get (
+    req jsonb
+)
+    returns jsonb
+    language sql
+    security definer
 as $$
     select to_jsonb(auth.web_userdata_get(
         jsonb_populate_record(
             null::auth.web_userdata_get_it,
             auth.auth(req))
     ))
-$$ language sql stable;
+$$;
 

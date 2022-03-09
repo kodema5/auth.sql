@@ -15,7 +15,9 @@ create type auth.web_register_t as (
 create function auth.web_register (
     it auth.web_register_it
 )
-returns auth.web_register_t
+    returns auth.web_register_t
+    language plpgsql
+    security definer
 as $$
 declare
     a auth.web_register_t;
@@ -76,20 +78,27 @@ begin
     );
     return a;
 end;
-$$ language plpgsql;
+$$;
 
 
-create function auth.web_register ( req jsonb )
-returns jsonb
+create function auth.web_register (
+    req jsonb
+)
+    returns jsonb
+    language sql
+    security definer
 as $$
     select to_jsonb(auth.web_register(
         jsonb_populate_record(null::auth.web_register_it, req)
     ))
-$$ language sql stable;
+$$;
 
 
 \if :test
-    create function tests.test_auth_web_register() returns setof text as $$
+    create function tests.test_auth_web_register()
+        returns setof text
+        language plpgsql
+    as $$
     declare
         a jsonb;
     begin
@@ -136,7 +145,6 @@ $$ language sql stable;
             (select count(1) from auth_.user where ns_id='dev' and signon_id='foo.test') = 1,
             'foo.test is able to register');
     end;
-    $$ language plpgsql;
-
+    $$;
 \endif
 

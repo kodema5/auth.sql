@@ -18,8 +18,11 @@ create type auth_admin.web_users_get_t as (
 );
 
 create function auth_admin.web_users_get(
-    it auth_admin.web_users_get_it)
-returns auth_admin.web_users_get_t
+    it auth_admin.web_users_get_it
+)
+    returns auth_admin.web_users_get_t
+    language plpgsql
+    security definer
 as $$
 declare
     a auth_admin.web_users_get_t;
@@ -36,22 +39,29 @@ begin
 
     return a;
 end;
-$$ language plpgsql;
+$$;
 
 
-create function auth_admin.web_users_get (req jsonb)
-returns jsonb
+create function auth_admin.web_users_get (
+    req jsonb
+)
+    returns jsonb
+    language sql
+    security definer
 as $$
     select to_jsonb(auth_admin.web_users_get(
         jsonb_populate_record(
             null::auth_admin.web_users_get_it,
             auth_admin.auth(req))
     ))
-$$ language sql stable;
+$$;
 
 
 \if :test
-    create function tests.test_auth_admin_web_users_get() returns setof text as $$
+    create function tests.test_auth_admin_web_users_get ()
+        returns setof text
+        language plpgsql
+    as $$
     declare
         sid jsonb = tests.session_as_foo_admin();
         a jsonb;
@@ -62,6 +72,6 @@ $$ language sql stable;
         a = auth_admin.web_users_get( sid || jsonb_build_object('signon_ids', jsonb_build_array('foo.admin')));
         return next ok(jsonb_array_length(a->'users') = 1, 'has foo.admin');
     end;
-    $$ language plpgsql;
+    $$;
 \endif
 

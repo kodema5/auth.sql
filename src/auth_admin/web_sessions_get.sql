@@ -8,8 +8,11 @@ create type auth_admin.web_sessions_get_t as (
 );
 
 create function auth_admin.web_sessions_get (
-    it auth_admin.web_sessions_get_it)
-returns auth_admin.web_sessions_get_t
+    it auth_admin.web_sessions_get_it
+)
+    returns auth_admin.web_sessions_get_t
+    language plpgsql
+    security definer
 as $$
 declare
     a auth_admin.web_sessions_get_t;
@@ -24,21 +27,29 @@ begin
     ) s;
     return a;
 end;
-$$ language plpgsql;
+$$;
 
 
-create function auth_admin.web_sessions_get(req jsonb)
-returns jsonb as $$
+create function auth_admin.web_sessions_get(
+    req jsonb
+)
+    returns jsonb
+    language sql
+    security definer
+as $$
     select to_jsonb(auth_admin.web_sessions_get(
         jsonb_populate_record(
             null::auth_admin.web_sessions_get_it,
             auth_admin.auth(req))
     ))
-$$ language sql stable;
+$$;
 
 
 \if :test
-    create function tests.test_auth_admin_web_sessions_get() returns setof text as $$
+    create function tests.test_auth_admin_web_sessions_get()
+        returns setof text
+        language plpgsql
+    as $$
     declare
         sid1 jsonb = tests.session_as_foo_admin();
         sid2 jsonb = tests.session_as_foo_user();
@@ -52,6 +63,6 @@ $$ language sql stable;
         return next ok(jsonb_array_length(a->'sessions') = 2, 'able to get sessions for namespace');
 
     end;
-    $$ language plpgsql;
+    $$;
 \endif
 

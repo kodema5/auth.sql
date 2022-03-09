@@ -1,6 +1,9 @@
 \if :test
     -- unit test scaffolding
-    create function tests.startup_auth() returns setof text as $$
+    create function tests.startup_auth()
+        returns setof text
+        language plpgsql
+    as $$
     begin
         insert into auth_.namespace (id) values ('dev');
 
@@ -19,18 +22,24 @@
         return next 'startup-auth';
 
     end;
-    $$ language plpgsql;
+    $$;
 
 
-    create function tests.shutdown_auth() returns setof text as $$
+    create function tests.shutdown_auth()
+        returns setof text
+        language plpgsql
+    as $$
     begin
         delete from auth_.namespace where id = 'dev';
         return next 'shutdown-auth';
     end;
-    $$ language plpgsql;
+    $$;
 
 
-    create function tests.session_as_foo_user() returns jsonb as $$
+    create function tests.session_as_foo_user()
+        returns jsonb
+        language plpgsql
+    as $$
     declare
         r jsonb;
     begin
@@ -41,10 +50,13 @@
         ));
         return jsonb_build_object('session_id', r->'session_id');
     end;
-    $$ language plpgsql;
+    $$;
 
 
-    create function tests.session_as_foo_admin() returns jsonb as $$
+    create function tests.session_as_foo_admin()
+        returns jsonb
+        language plpgsql
+    as $$
     declare
         r jsonb;
     begin
@@ -55,6 +67,5 @@
         ));
         return jsonb_build_object('session_id', r->'session_id');
     end;
-    $$ language plpgsql;
-
+    $$;
 \endif

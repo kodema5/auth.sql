@@ -12,7 +12,9 @@ create type auth.web_unregister_t as (
 create function auth.web_unregister(
     it auth.web_unregister_it
 )
-returns auth.web_unregister_t
+    returns auth.web_unregister_t
+    language plpgsql
+    security definer
 as $$
 declare
     a auth.web_unregister_t;
@@ -42,22 +44,29 @@ begin
     a.success = true;
     return a;
 end;
-$$ language plpgsql;
+$$;
 
 
-create function auth.web_unregister(req jsonb)
-returns jsonb
+create function auth.web_unregister(
+    req jsonb
+)
+    returns jsonb
+    language sql
+    security definer
 as $$
     select to_jsonb(auth.web_unregister(
         jsonb_populate_record(
             null::auth.web_unregister_it,
             auth.auth(req))
     ))
-$$ language sql stable;
+$$;
 
 
 \if :test
-    create function tests.test_auth_web_registration() returns setof text as $$
+    create function tests.test_auth_web_registration()
+        returns setof text
+        language plpgsql
+    as $$
     declare
         sid jsonb = tests.session_as_foo_user();
         a jsonb;
@@ -82,6 +91,6 @@ $$ language sql stable;
             not exists (select from auth_.user where ns_id='dev' and signon_id='foo.user'),
             'foo.user is able to unregister');
     end;
-    $$ language plpgsql;
+    $$;
 \endif
 

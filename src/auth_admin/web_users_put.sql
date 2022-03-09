@@ -12,8 +12,11 @@ create type auth_admin.web_users_put_t as (
 );
 
 create function auth_admin.web_users_put (
-    it auth_admin.web_users_put_it)
-returns auth_admin.web_users_put_t
+    it auth_admin.web_users_put_it
+)
+    returns auth_admin.web_users_put_t
+    language plpgsql
+    security definer
 as $$
 declare
     a auth_admin.web_users_put_t;
@@ -79,22 +82,29 @@ begin
     a.user = u;
     return a;
 end;
-$$ language plpgsql;
+$$;
 
 
-create function auth_admin.web_users_put (req jsonb)
-returns jsonb
+create function auth_admin.web_users_put (
+    req jsonb
+)
+    returns jsonb
+    language sql
+    security definer
 as $$
     select to_jsonb(auth_admin.web_users_put(
         jsonb_populate_record(
             null::auth_admin.web_users_put_it,
             auth_admin.auth(req))
     ))
-$$ language sql stable;
+$$;
 
 
 \if :test
-    create function tests.test_auth_admin_web_users_put() returns setof text as $$
+    create function tests.test_auth_admin_web_users_put()
+        returns setof text
+        language plpgsql
+    as $$
     declare
         sid jsonb = tests.session_as_foo_admin();
         a jsonb;
@@ -131,5 +141,5 @@ $$ language sql stable;
         );
         return next throws_ok(format('select auth_admin.web_users_put(%L::jsonb)', a), 'error.invalid_signon_key');
     end;
-    $$ language plpgsql;
+    $$;
 \endif

@@ -11,9 +11,12 @@ create type auth_admin.web_sessions_put_t as (
     setting jsonb
 );
 
-create function auth_admin.web_sessions_put(
-    it auth_admin.web_sessions_put_it )
-returns auth_admin.web_sessions_put_t
+create function auth_admin.web_sessions_put (
+    it auth_admin.web_sessions_put_it
+)
+    returns auth_admin.web_sessions_put_t
+    language plpgsql
+    security definer
 as $$
 declare
     a auth_admin.web_sessions_put_t;
@@ -48,22 +51,29 @@ begin
     );
     return a;
 end;
-$$ language plpgsql;
+$$;
 
 
-create function auth_admin.web_sessions_put ( req jsonb )
-returns jsonb
+create function auth_admin.web_sessions_put (
+    req jsonb
+)
+    returns jsonb
+    language sql
+    security definer
 as $$
     select to_jsonb(auth_admin.web_sessions_put (
         jsonb_populate_record(
             null::auth_admin.web_sessions_put_it,
             auth_admin.auth(req))
     ))
-$$ language sql stable;
+$$;
 
 
 \if :test
-    create function tests.test_auth_admin_web_sessions_put() returns setof text as $$
+    create function tests.test_auth_admin_web_sessions_put()
+        returns setof text
+        language plpgsql
+    as $$
     declare
         sid jsonb = tests.session_as_foo_admin();
         a jsonb;
@@ -83,6 +93,6 @@ $$ language sql stable;
         return next ok(a->>'session_id' is not null, 'get new session');
 
     end;
-    $$ language plpgsql;
+    $$;
 \endif
 

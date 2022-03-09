@@ -19,7 +19,10 @@ create function auth.auth (
     req auth.auth_it,
     required boolean default true
 )
-returns auth.auth_t as $$
+    returns auth.auth_t
+    security definer
+    language plpgsql
+as $$
 declare
     sid text = req.session_id;
     a auth.auth_t;
@@ -65,18 +68,21 @@ begin
     a.is_system = a.role='system';
     return a;
 end;
-$$ language plpgsql;
+$$;
 
 
 create function auth.auth (
     req jsonb,
     required boolean default true
 )
-returns jsonb as $$
+    returns jsonb
+    security definer
+    language sql
+as $$
     select req
         || jsonb_build_object(
             '_auth',
             auth.auth(
                 jsonb_populate_record(null::auth.auth_it, req),
                 required))
-$$ language sql stable;
+$$;

@@ -10,7 +10,9 @@ create type auth.web_userdata_put_t as (
 create function auth.web_userdata_put(
     it auth.web_userdata_put_it
 )
-returns auth.web_userdata_put_t
+    returns auth.web_userdata_put_t
+    language plpgsql
+    security definer
 as $$
 declare
     a auth.web_userdata_put_t;
@@ -35,21 +37,29 @@ begin
 
     return a;
 end;
-$$ language plpgsql;
+$$;
 
 
-create function auth.web_userdata_put(req jsonb)
-returns jsonb as $$
+create function auth.web_userdata_put(
+    req jsonb
+)
+    returns jsonb
+    language sql
+    security definer
+as $$
     select to_jsonb(auth.web_userdata_put(
         jsonb_populate_record(
             null::auth.web_userdata_put_it,
             auth.auth(req))
     ))
-$$ language sql stable;
+$$;
 
 
 \if :test
-    create function tests.test_auth_web_userdata() returns setof text as $$
+    create function tests.test_auth_web_userdata()
+        returns setof text
+        language plpgsql
+    as $$
     declare
         sid jsonb = tests.session_as_foo_user();
         a jsonb;
@@ -72,6 +82,5 @@ $$ language sql stable;
         return next ok(a->'userdata'->>'test.a' is null, 'removes userdata');
         return next ok(a->'userdata'->>'test.x' = '3', 'overrides userdata');
     end;
-    $$ language plpgsql;
-
+    $$;
 \endif

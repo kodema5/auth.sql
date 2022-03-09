@@ -9,9 +9,12 @@ create type auth_admin.web_settings_get_t as (
     setting jsonb
 );
 
-create function auth_admin.web_settings_get(
-    it auth_admin.web_settings_get_it)
-returns auth_admin.web_settings_get_t
+create function auth_admin.web_settings_get (
+    it auth_admin.web_settings_get_it
+)
+    returns auth_admin.web_settings_get_t
+    language plpgsql
+    security definer
 as $$
 declare
     a auth_admin.web_settings_get_t;
@@ -41,22 +44,29 @@ begin
 
     return a;
 end;
-$$ language plpgsql;
+$$;
 
 
-create function auth_admin.web_settings_get(req jsonb)
-returns jsonb
+create function auth_admin.web_settings_get(
+    req jsonb
+)
+    returns jsonb
+    language sql
+    security definer
 as $$
     select to_jsonb(auth_admin.web_settings_get(
         jsonb_populate_record(
             null::auth_admin.web_settings_get_it,
             auth_admin.auth(req))
     ))
-$$ language sql stable;
+$$;
 
 
 \if :test
-    create function tests.test_auth_admin_web_settings_get() returns setof text as $$
+    create function tests.test_auth_admin_web_settings_get()
+        returns setof text
+        language plpgsql
+    as $$
     declare
         sid jsonb = tests.session_as_foo_admin();
         a jsonb;
@@ -71,6 +81,6 @@ $$ language sql stable;
         return next ok(a->'setting'->'test.a' is not null, 'returns specified key');
 
     end;
-    $$ language plpgsql;
+    $$;
 \endif
 

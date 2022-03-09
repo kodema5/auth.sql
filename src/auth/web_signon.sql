@@ -14,7 +14,9 @@ create type auth.web_signon_t as (
 create function auth.web_signon (
     it auth.web_signon_it
 )
-returns auth.web_signon_t
+    returns auth.web_signon_t
+    language plpgsql
+    security definer
 as $$
 declare
     a auth.web_signon_t;
@@ -59,21 +61,28 @@ begin
     );
     return a;
 end;
-$$ language plpgsql;
+$$;
 
-create function auth.web_signon(req jsonb)
-returns jsonb
+create function auth.web_signon(
+    req jsonb
+)
+    returns jsonb
+    language sql
+    security definer
 as $$
     select to_jsonb(auth.web_signon(
         jsonb_populate_record(
             null::auth.web_signon_it,
             auth.auth(req, false))
     ))
-$$ language sql stable;
+$$;
 
 
 \if :test
-    create function tests.test_auth_web_signon() returns setof text as $$
+    create function tests.test_auth_web_signon()
+        returns setof text
+        language plpgsql
+    as $$
     declare
         a jsonb;
     begin
@@ -112,6 +121,5 @@ $$ language sql stable;
         return next ok(jsonb_typeof(a->'setting') = 'object', 'got setting');
 
     end;
-    $$ language plpgsql;
-
+    $$;
 \endif

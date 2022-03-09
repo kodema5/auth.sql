@@ -7,9 +7,12 @@ create type auth_admin.web_users_delete_t as (
     deleted int
 );
 
-create function auth_admin.web_users_delete(
-    it auth_admin.web_users_delete_it)
-returns auth_admin.web_users_delete_t
+create function auth_admin.web_users_delete (
+    it auth_admin.web_users_delete_it
+)
+    returns auth_admin.web_users_delete_t
+    language plpgsql
+    security definer
 as $$
 declare
     a auth_admin.web_users_delete_t;
@@ -25,22 +28,29 @@ begin
 
     return a;
 end;
-$$ language plpgsql;
+$$;
 
 
-create function auth_admin.web_users_delete (req jsonb)
-returns jsonb
+create function auth_admin.web_users_delete (
+    req jsonb
+)
+    returns jsonb
+    language sql
+    security definer
 as $$
     select to_jsonb(auth_admin.web_users_delete(
         jsonb_populate_record(
             null::auth_admin.web_users_delete_it,
             auth_admin.auth(req))
     ))
-$$ language sql stable;
+$$;
 
 
 \if :test
-    create function tests.test_auth_admin_web_users_delete() returns setof text as $$
+    create function tests.test_auth_admin_web_users_delete()
+        returns setof text
+        language plpgsql
+    as $$
     declare
         sid jsonb = tests.session_as_foo_admin();
         a jsonb;
@@ -57,5 +67,5 @@ $$ language sql stable;
                 'signon_ids', jsonb_build_array('foo.user')));
         return next ok(jsonb_typeof(a->'users')='null', 'foo.user deleted');
     end;
-    $$ language plpgsql;
+    $$;
 \endif

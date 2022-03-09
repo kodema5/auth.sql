@@ -13,7 +13,9 @@ create type auth.web_setting_put_t as (
 create function auth.web_setting_put(
     it auth.web_setting_put_it
 )
-returns auth.web_setting_put_t
+    returns auth.web_setting_put_t
+    language plpgsql
+    security definer
 as $$
 declare
     a auth.web_setting_put_t;
@@ -40,21 +42,30 @@ begin
 
     return a;
 end;
-$$ language plpgsql;
+$$;
 
 
-create function auth.web_setting_put(req jsonb) returns jsonb as $$
+create function auth.web_setting_put (
+    req jsonb
+)
+    returns jsonb
+    language sql
+    security definer
+as $$
     select to_jsonb(auth.web_setting_put(
         jsonb_populate_record(
             null::auth.web_setting_put_it,
             auth.auth(req))
     ))
-$$ language sql stable;
+$$;
 
 
 
 \if :test
-    create function tests.test_auth_web_setting_put() returns setof text as $$
+    create function tests.test_auth_web_setting_put()
+        returns setof text
+        language plpgsql
+    as $$
     declare
         sid jsonb = tests.session_as_foo_user();
         a jsonb;
@@ -75,6 +86,5 @@ $$ language sql stable;
         a = auth.web_setting_get(sid || jsonb_build_object('keys', jsonb_build_array('test.*')));
         return next ok(a->'setting'->>'test.a' = '100', 'removes override');
     end;
-    $$ language plpgsql;
-
+    $$;
 \endif

@@ -12,7 +12,9 @@ create type auth.web_change_password_t as (
 create function auth.web_change_password (
     it auth.web_change_password_it
 )
-returns auth.web_change_password_t
+    returns auth.web_change_password_t
+    language plpgsql
+    security definer
 as $$
 declare
     a auth.web_change_password_t;
@@ -41,21 +43,29 @@ begin
     a.success = true;
     return a;
 end;
-$$ language plpgsql;
+$$;
 
 
-create function auth.web_change_password (req jsonb)
-returns jsonb as $$
+create function auth.web_change_password (
+    req jsonb
+)
+    returns jsonb
+    language sql
+    security definer
+as $$
     select to_jsonb(auth.web_change_password(
         jsonb_populate_record(
             null::auth.web_change_password_it,
             auth.auth(req))
     ))
-$$ language sql stable;
+$$;
 
 
 \if :test
-    create function tests.test_auth_web_change_password() returns setof text as $$
+    create function tests.test_auth_web_change_password()
+        returns setof text
+        language plpgsql
+    as $$
     declare
         sid jsonb = tests.session_as_foo_user();
         res jsonb;
@@ -67,5 +77,5 @@ $$ language sql stable;
         ));
         return next ok((res->'success')::boolean = true, 'able to change password');
     end;
-    $$ language plpgsql;
+    $$;
 \endif
