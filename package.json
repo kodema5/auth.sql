@@ -1,0 +1,5 @@
+{
+    "name": "mo-auth",
+    "main": "auth.js",
+    "version": "0.0.1"
+}

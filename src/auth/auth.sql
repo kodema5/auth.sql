@@ -1,88 +1,35 @@
--- checks session_id variable and adds authentication information
-
-create type auth.auth_it as (
-    session_id text
-);
-
-create type auth.auth_t as (
+create function auth.who (
     session_id text,
-    namespace text,
-    user_id text,
-    signon_id text,
-    role text,
-    is_admin boolean,
-    is_system boolean,
-    last_accessed_tz timestamp with time zone
-);
-
-create function auth.auth (
-    req auth.auth_it,
-    required boolean default true
+    origin_ text default null
 )
-    returns auth.auth_t
+    returns _auth.signon
+    language sql
     security definer
-    language plpgsql
 as $$
-declare
-    sid text = req.session_id;
-    a auth.auth_t;
-begin
-    if req is null or sid is null then
-        if required then
-            raise exception 'error.invalid_session';
-        end if;
-        return null;
-    end if;
-
-    update auth_.session s1
-    set accessed_tz = now()
-    from (
-        select id, accessed_tz
-        from auth_.session
-        where id = sid
-        for update
-    ) s0
-    where s1.id = s0.id
-    returning s0.accessed_tz
-        as last_accessed_tz, s1.user_id
-        into a.last_accessed_tz, a.user_id;
-
-    if not found then
-        if required then
-            raise exception 'error.invalid_session';
-        end if;
-        return null;
-    end if;
-
-    select u.role, u.signon_id, u.ns_id
-    into a.role, a.signon_id, a.namespace
-    from auth_.user u
-    where u.id = a.user_id;
-
-    if not found then
-        return null;
-    end if;
-
-    a.session_id = sid;
-    a.is_admin = a.role='admin' or a.role='system';
-    a.is_system = a.role='system';
-    return a;
-end;
+    select u.*
+    from _auth.session s
+    join _auth.signon u on u.id = s.signon_id
+    where s.id = session_id
+        and u.is_active = true
+        and s.authenticated = true
+        and s.signed_off_tz is null
+        and s.expired_tz is null
+        and (origin_ is null or s.origin = origin_);
 $$;
 
-
+-- auth.auth is a function that is to be called frequently
+-- it adds _who into req jsonb
+--
 create function auth.auth (
-    req jsonb,
-    required boolean default true
+    req jsonb
 )
     returns jsonb
-    security definer
     language sql
+    security definer
 as $$
-    select req
-        || jsonb_build_object(
-            '_auth',
-            auth.auth(
-                jsonb_populate_record(null::auth.auth_it, req),
-                required))
+    select req || jsonb_build_object(
+        '_who', auth.who(
+            coalesce(req->'_headers'->>'authorization', 'nobody'),
+            coalesce(req->>'_origin', 'nowhere')
+        ))
 $$;
