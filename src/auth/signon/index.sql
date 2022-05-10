@@ -4,8 +4,7 @@ create type auth.signon_it as (
 );
 
 create type auth.signon_t as (
-    session_id text,
-    signon_name text
+    session_id text
 );
 
 create function auth.signon (
@@ -45,7 +44,15 @@ begin
         returning *
         into s;
 
-    a.session_id=s.id;
+    a.session_id = jwt.encode(jsonb_build_object(
+        'sid', s.id,
+        'uid', u.id,
+        'role', u.role
+    ));
+    if a.session_id is null then
+        raise exception 'error.unable_to_generate_session_id';
+    end if;
+
     return a;
 end;
 $$;
@@ -82,7 +89,8 @@ $$;
             '_origin', 'test'
         ));
 
-        return next ok(res['session_id'] is not null, 'able to sign-on');
+
+        return next ok(res->>'session_id' is not null, 'able to sign-on');
     end;
     $$;
 \endif

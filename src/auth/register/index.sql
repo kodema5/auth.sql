@@ -51,7 +51,15 @@ begin
         )
         returning * into s;
 
-    a.session_id = s.id;
+    a.session_id = jwt.encode(jsonb_build_object(
+        'sid', s.id,
+        'uid', u.id,
+        'role', u.role
+    ));
+    if a.session_id is null then
+        raise exception 'error.unable_to_generate_session_id';
+    end if;
+
     return a;
 end;
 $$;
@@ -85,13 +93,13 @@ $$;
             'signon_password', 'bar'
         ));
         return next ok(true, 'able to register');
-        return next ok(res->'session_id' is not null, 'is automatically signed-in');
+        return next ok(res->>'session_id' is not null, 'is automatically signed-in');
 
         res = auth.web_signon(jsonb_build_object(
             'signon_name', 'foo',
             'signon_password', 'bar'
         ));
-        return next ok(res->'session_id' is not null, 'able to signon');
+        return next ok(res->>'session_id' is not null, 'able to signon');
     end;
     $$;
 \endif

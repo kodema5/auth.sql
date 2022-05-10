@@ -1,6 +1,6 @@
 -- to signoff
 create function auth.signoff (
-    session_id text,
+    jwt text,
     req jsonb default null
 )
     returns jsonb
@@ -8,11 +8,14 @@ create function auth.signoff (
     security definer
 as $$
 declare
+    sid text;
     u _auth.signon;
 begin
+    sid = jwt.decode(jwt)->>'sid';
+
     -- coming from web-call
     if req is not null then
-        if auth.who(session_id, req->>'_origin') is null
+        if auth.who(sid, req->>'_origin') is null
         then
             raise exception 'error.unrecognized_session';
         end if;
@@ -20,7 +23,7 @@ begin
 
     update _auth.session
         set signed_off_tz = now()
-        where id = session_id;
+        where id = sid;
     return null;
 
     return jsonb_build_object(
@@ -51,7 +54,9 @@ $$;
     begin
         res = auth.web_signoff(jsonb_build_object(
             '_headers', jsonb_build_object(
-                'authorization', 'test-session-id'
+                'authorization', jwt.encode(jsonb_build_object(
+                    'sid','test-session-id'
+                ))
             ),
             '_origin', 'test'
         ));

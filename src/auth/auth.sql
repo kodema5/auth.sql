@@ -18,7 +18,7 @@ as $$
 $$;
 
 -- auth.auth is a function that is to be called frequently
--- it adds _who into req jsonb
+-- it adds _auth into req jsonb
 --
 create function auth.auth (
     req jsonb
@@ -28,8 +28,8 @@ create function auth.auth (
     security definer
 as $$
     select req || jsonb_build_object(
-        '_who', auth.who(
-            coalesce(req->'_headers'->>'authorization', 'nobody'),
+        '_auth', auth.who(
+            coalesce(jwt.decode(req->'_headers'->>'authorization')->>'sid', 'nobody'),
             coalesce(req->>'_origin', 'nowhere')
         ))
 $$;
