@@ -31,7 +31,15 @@ $$;
 -- jwt.encode with stored key
 --
 create function jwt.encode (
-    payload jsonb
+    payload jsonb,
+
+    -- expiration
+    exp_ timestamp with time zone
+        default (now() + '30 mins'::interval),
+
+    -- prefix for key selection
+    id_ text
+        default '%'
 )
     returns text
     language sql
@@ -42,6 +50,7 @@ as $$
     k as ( -- get random key
         select *
         from _jwt.key
+        where id like id_
         order by random()
         limit 1
     )
@@ -49,8 +58,10 @@ as $$
         payload,
         k.value, -- key
         jsonb_build_object (
-            'key_id', k.id
+            'jti', k.id,
+            'exp', to_char(exp_::timestamp at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
         ))
     from k
 $$;
+
 
