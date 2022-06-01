@@ -1,11 +1,18 @@
 -- web-dev watch auth.sql
-create extension if not exists "uuid-ossp" schema public;
-create extension if not exists pgcrypto schema public;
-create extension if not exists ltree schema public;
 
+-- add jwt.sql
+\set skip_test false
+\if :test
+    \set skip_test true
+    \set test false
+\endif
 
-\ir ./src/_jwt/index.sql
-\ir ./src/jwt/index.sql
+\ir jwt.sql/jwt.sql
+
+\if :skip_test
+    \set test true
+\endif
+
 
 \ir ./src/_auth/index.sql
 \ir ./src/auth/index.sql
