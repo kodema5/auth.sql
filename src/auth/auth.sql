@@ -31,13 +31,15 @@ create function auth.auth (
     language sql
     security definer
 as $$
+    with t as (
+        select jwt.auth(req) as a
+    )
+    -- additional post processing to validate sid
     select req || jsonb_build_object(
         '_auth', auth.who(
-            coalesce(jwt.decode(
-                req->'_headers'->>'authorization')->>'sid',
-                'nobody'),
-            coalesce(
-                req->>'_origin',
-                'nowhere')
-        ))
+            coalesce(a->'_auth'->>'sid', 'nobody'),
+            coalesce(a->>'_origin', 'nowhere')
+        )
+    )
+    from t
 $$;

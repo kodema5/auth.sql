@@ -1,3 +1,5 @@
+create extension if not exists ltree schema public;
+
 drop schema if exists auth cascade;
 create schema if not exists auth;
 

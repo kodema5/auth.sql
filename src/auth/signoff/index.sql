@@ -1,7 +1,6 @@
 -- to signoff
 create function auth.signoff (
-    jwt text,
-    req jsonb default null
+    req jsonb
 )
     returns jsonb
     language plpgsql
@@ -10,15 +9,12 @@ as $$
 declare
     sid text;
     u _auth.signon;
+    a jsonb;
 begin
-    sid = jwt.decode(jwt)->>'sid';
-
-    -- coming from web-call
-    if req is not null then
-        if auth.who(sid, req->>'_origin') is null
-        then
-            raise exception 'error.unrecognized_session';
-        end if;
+    a = jwt.auth(req);
+    sid = a->'_auth'->>'sid';
+    if sid is null then
+        raise exception 'error.unrecognized_session';
     end if;
 
     update _auth.session
@@ -40,7 +36,6 @@ create function auth.web_signoff (
     security definer
 as $$
     select to_jsonb(auth.signoff(
-        req->'_headers'->>'authorization',
         req
     ))
 $$;
@@ -54,7 +49,7 @@ $$;
     begin
         res = auth.web_signoff(jsonb_build_object(
             '_headers', jsonb_build_object(
-                'authorization', jwt.encode(jsonb_build_object(
+                'authorization', 'Bearer ' || jwt.encode(jsonb_build_object(
                     'sid','test-session-id'
                 ))
             ),

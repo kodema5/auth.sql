@@ -51,7 +51,7 @@ begin
         )
         returning * into s;
 
-    a.session_id = jwt.encode(jsonb_build_object(
+    a.session_id = 'Bearer ' || jwt.encode(jsonb_build_object(
         'sid', s.id,
         'uid', u.id,
         'role', u.role
