@@ -37,8 +37,8 @@ as $$
     -- additional post processing to validate sid
     select req || jsonb_build_object(
         '_auth', auth.who(
-            coalesce(a->'_auth'->>'sid', 'nobody'),
-            coalesce(a->>'_origin', 'nowhere')
+            coalesce(a->>'sid', 'nobody'),
+            coalesce(req->>'_origin', 'nowhere')
         )
     )
     from t

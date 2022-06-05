@@ -12,7 +12,7 @@ declare
     a jsonb;
 begin
     a = jwt.auth(req);
-    sid = a->'_auth'->>'sid';
+    sid = a->>'sid';
     if sid is null then
         raise exception 'error.unrecognized_session';
     end if;
