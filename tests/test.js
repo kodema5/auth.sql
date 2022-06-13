@@ -1,23 +1,14 @@
-import {
-    assert,
-    assertEquals,
-    assertStrictEquals,
-    assertThrows,
-} from "https://deno.land/std@0.136.0/testing/asserts.ts";
-import {
-    afterEach,
-    beforeEach,
-    describe,
-    it,
-} from "https://deno.land/std@0.136.0/testing/bdd.ts";
+import { assert, } from "https://deno.land/std@0.136.0/testing/asserts.ts";
+import { describe, it, } from "https://deno.land/std@0.136.0/testing/bdd.ts";
+
+import * as Ajax from 'https://raw.githubusercontent.com/kodema5/ajax.js/master/mod.js'
+Ajax.ajax.base_href = 'http://localhost:8000'
+
+import { Auth } from '../auth.js'
+let auth = new Auth({ Ajax })
 
 
-import './src/core/index.js'
-ajax.base_href = 'http://localhost:8000'
-
-import * as auth from './auth.js'
-
-describe("auth", () => {
+describe("signon-signoff", () => {
     it("signon", async () => {
         let r = await auth.signon({
             signon_name: 'test-signon-name',
@@ -25,16 +16,17 @@ describe("auth", () => {
         })
 
         assert(r.session_id)
-        assert(ajax.headers['Authorization'])
+        assert(Ajax.ajax.headers['Authorization'])
     })
 
     it("signoff", async () => {
         await auth.signoff()
-        assert(!ajax.headers['Authorization'])
+        assert(!Ajax.ajax.headers['Authorization'])
     })
 })
 
-describe("auth", () => {
+
+describe("register", () => {
     it("register", async () => {
 
         // existing may be inside
@@ -53,3 +45,4 @@ describe("auth", () => {
     })
 
 })
+

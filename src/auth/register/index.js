@@ -1,48 +1,18 @@
-// @deno-types="./index.d.ts"
-
-import { Err } from '../../core/index.js'
-
-export let register = async (values) => {
-    let a =  await ajax({
+export let register = async function ({
+    signon_name,
+    signon_password
+}) {
+    let a =  await this.ajax({
         url: '/api/auth/register',
-        data: values,
+        data: {
+            signon_name,
+            signon_password
+        },
     })
 
-    ajax.headers["Authorization"] = a.session_id
-    return a
-}
+    if (a.errors) throw a.errors
 
+    this.ajax.headers['Authorization'] = a.data?.session_id
 
-register.resolve = (values) => {
-    let err = new Err()
-    let { signon_name, signon_password } = values
-    if (!signon_name) {
-        err.add('signon_name', 'signon_name is required')
-    }
-    if (!signon_password) {
-        err.add('signon_password', 'signon_password is required')
-    }
-    if (err.has()) return { errors:err.errors }
-
-    return { values }
-}
-
-
-
-register.form = {
-    defaultValues: {
-        signon_name: '',
-        signon_password: '',
-    }
-}
-
-register.fields = {
-    signon_name: {
-        required: true,
-        minLength: 8,
-    },
-    signon_password: {
-        required: true,
-        minLength: 8,
-    },
+    return a.data
 }

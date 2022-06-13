@@ -20,10 +20,9 @@ begin
     update _auth.session
         set signed_off_tz = now()
         where id = sid;
-    return null;
 
     return jsonb_build_object(
-        'success', true
+        'signed-off', now()
     );
 end;
 $$;

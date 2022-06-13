@@ -1,12 +1,13 @@
-// @deno-types="./index.d.ts"
+export let signoff = async function () {
 
-import '../../core/index.js'
-
-export let signoff = async () => {
-    let a = await ajax({
+    let a = await this.ajax({
         url: '/api/auth/signoff',
+        data: {},
     })
-    delete ajax.headers['Authorization']
-    return a
-}
 
+    if (a.errors) throw a.errors
+
+    delete this.ajax.headers['Authorization']
+
+    return a.data
+}

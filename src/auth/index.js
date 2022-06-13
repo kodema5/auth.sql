@@ -1,5 +1,19 @@
 // @deno-types="./index.d.ts"
 
-export { register } from './register/index.js'
-export { signon } from './signon/index.js'
-export { signoff } from './signoff/index.js'
+import { register } from './register/index.js'
+import { signon } from './signon/index.js'
+import { signoff } from './signoff/index.js'
+
+export class Auth {
+    constructor ({Ajax}) {
+        this.Ajax = Ajax
+        this.ajax = Ajax.ajax
+    }
+}
+
+Object.assign(Auth.prototype, {
+    register,
+    signon,
+    signoff,
+})
+
