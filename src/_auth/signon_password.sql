@@ -13,7 +13,7 @@ create table if not exists _auth.signon_password (
 
     signon_id text
         references _auth.signon(id)
-            on delete cascade
+        on delete cascade
         not null,
 
     password text

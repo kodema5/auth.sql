@@ -9,6 +9,7 @@ create table if not exists _auth.session (
     -- session for
     signon_id text
         references _auth.signon(id)
+        on delete cascade
         not null,
 
     -- a session data

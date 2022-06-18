@@ -56,6 +56,7 @@ begin
         'uid', u.id,
         'role', u.role
     ));
+
     if a.session_id is null then
         raise exception 'error.unable_to_generate_session_id';
     end if;
@@ -103,7 +104,4 @@ $$;
     end;
     $$;
 \endif
-
-
-
 

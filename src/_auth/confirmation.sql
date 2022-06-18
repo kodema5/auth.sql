@@ -1,29 +1,27 @@
 -- tracks various user confirmation
--- TODO
 --
-create table if not exists _auth.confirmation (
+create table if not exists _auth.token (
     id text
         default md5(uuid_generate_v4()::text)
         primary key,
 
-    -- the pin that user needs to enter
-    pin int,
+    -- 6 digits confirmation
+    pin text
+        default lpad(floor(random() * 9876543 + 1234)::text, 6, '0'),
+        -- alternatively
+        -- upper(substr(md5(random()::text), 1,6))
 
+    -- a user-id if available
     signon_id text
         references _auth.signon(id)
-            on delete cascade
-        not null,
+            on delete cascade,
 
-    -- type of confirmation, ex: account_activation
-    type text
-        not null,
-
-    -- helper data in confirmation
-    data jsonb
-        default '{}'::jsonb,
-
-    confirmed_tz timestamp with time zone,
+    used_tz timestamp with time zone,
 
     -- when it will be expired
     until_tz timestamp with time zone
+        default now() + '5 minutes'::interval,
+
+    data jsonb
+        default '{}'::jsonb
 );

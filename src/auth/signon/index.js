@@ -13,7 +13,7 @@ export let signon = async function ({
 
     if (a.errors) throw a.errors
 
-    this.ajax.headers['Authorization'] = a.data?.session_id
+    let sid = this.ajax.headers['Authorization'] = a.data?.session_id
 
-    return a.data
+    return sid
 }

@@ -11,4 +11,3 @@ create schema if not exists _auth;
 \ir session.sql
 \ir setting.sql
 \ir confirmation.sql
-
