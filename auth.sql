@@ -1,3 +1,7 @@
+\if :{?auth_sql}
+\else
+\set auth_sql true
+
 -- web-dev watch auth.sql
 
 -- add jwt.sql
@@ -101,4 +105,6 @@ values
     end;
     $$;
 \endif
+\endif
+
 \endif
