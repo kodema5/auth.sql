@@ -1,3 +1,0 @@
-[submodule "jwt.sql"]
-	path = jwt.sql
-	url = https://github.com/kodema5/jwt.sql

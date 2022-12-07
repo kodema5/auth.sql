@@ -1,2 +1,2 @@
-# auth.api
+# auth.sql
 
