@@ -128,10 +128,10 @@ create table if not exists _auth.config_user (
 \ir auth/auth.sql
 
 set app.default_auth_function = 'auth.auth';
-\ir auth/web_config.sql
-\ir auth/web_register.sql
-\ir auth/web_signon.sql
-\ir auth/web_signoff.sql
-\ir auth/web_storage.sql
+\ir auth/web/config.sql
+\ir auth/web/register.sql
+\ir auth/web/signon.sql
+\ir auth/web/signoff.sql
+\ir auth/web/storage.sql
 
 \endif

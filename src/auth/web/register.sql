@@ -85,8 +85,8 @@ $$;
 
 
 \if :test
-    \ir auth.sql
-    \ir session.sql
+    \ir ../auth.sql
+    \ir ../session.sql
 
     create function tests.test_auth_web_register()
         returns setof text

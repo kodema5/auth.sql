@@ -26,9 +26,9 @@ create type auth.config_data_t as (
 );
 
 
-\ir web_config/config.sql
-\ir web_config/config_template.sql
-\ir web_config/config_user.sql
+\ir config/config.sql
+\ir config/config_template.sql
+\ir config/config_user.sql
 
 
 create type auth.config_get_it as (
@@ -37,7 +37,7 @@ create type auth.config_get_it as (
     user_id text
 );
 
-\ir web_config/get_config.sql
+\ir config/get_config.sql
 
 create type auth.config_it as (
     config auth.config_data_it,
@@ -97,6 +97,7 @@ $$;
 call util.export(array[
     util.web_fn_t('auth.config(auth.config_it)')
 ]);
+
 
 \if :test
     create function tests.test_auth_web_config()
