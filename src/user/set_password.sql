@@ -1,16 +1,12 @@
-\if :{?auth_password_sql}
-\else
-\set auth_password_sql true
-
-create function auth.password(
+create function "user".set_password(
     uid text,
     pwd text
 )
-    returns _auth.password
+    returns user_.password
     language sql
     security definer
 as $$
-    insert into _auth.password(
+    insert into user_.password(
         user_id,
         password
     ) values (
@@ -22,5 +18,3 @@ as $$
         password = crypt(pwd, gen_salt('bf'))
     returning *
 $$;
-
-\endif
