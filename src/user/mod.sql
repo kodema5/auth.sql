@@ -67,6 +67,7 @@ create schema "user";
 \ir new.sql
 \ir get.sql
 \ir data.sql
+\ir sign.sql
 
 
 \endif

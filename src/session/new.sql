@@ -2,16 +2,17 @@
 -- - check if user is not locked?
 --
 create function session.new (
-    user_id_ text
+    user_id_ text,
+    is_signed_ boolean default true
 )
     returns session_.session
     language sql
     security definer
 as $$
     insert into session_.session (
-        user_id
+        user_id, is_signed
     ) values (
-        user_id_
+        user_id_, is_signed_
     )
     returning *;
 $$;

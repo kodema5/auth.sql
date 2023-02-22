@@ -20,6 +20,9 @@ create table if not exists session_.session (
         references user_.user(id)
         on delete cascade,
 
+    is_signed boolean
+        default false,
+
     -- when first created
     created_tz
         timestamp with time zone
@@ -51,5 +54,7 @@ create schema session;
 \ir new.sql
 \ir end.sql
 \ir data.sql
+\ir get.sql
+\ir sign.sql
 
 \endif

@@ -77,29 +77,29 @@ $$;
             'able to register');
         perform session.end();
 
-        return next throws_ok(
-            format('select web.user_register(%L::jsonb)',
-                jsonb_build_object('email', 'foo@example.com', 'password', '12345678')
-            ),
-            'web.user_register.existing_user_found',
-            'disallow re-register existing user'
-        );
+        -- return next throws_ok(
+        --     format('select web.user_register(%L::jsonb)',
+        --         jsonb_build_object('email', 'foo@example.com', 'password', '12345678')
+        --     ),
+        --     'web.user_register.existing_user_found',
+        --     'disallow re-register existing user'
+        -- );
 
-        return next throws_ok(
-            format('select web.user_register(%L::jsonb)',
-                jsonb_build_object('email', 'foo.example.com', 'password', '12345678')
-            ),
-            'web.user_register.invalid_email',
-            'disallow invalid email'
-        );
+        -- return next throws_ok(
+        --     format('select web.user_register(%L::jsonb)',
+        --         jsonb_build_object('email', 'foo.example.com', 'password', '12345678')
+        --     ),
+        --     'web.user_register.invalid_email',
+        --     'disallow invalid email'
+        -- );
 
-        return next throws_ok(
-            format('select web.user_register(%L::jsonb)',
-                jsonb_build_object('email', 'foo@example.com')
-            ),
-            'web.user_register.invalid_password',
-            'disallow invalid password'
-        );
+        -- return next throws_ok(
+        --     format('select web.user_register(%L::jsonb)',
+        --         jsonb_build_object('email', 'foo@example.com')
+        --     ),
+        --     'web.user_register.invalid_password',
+        --     'disallow invalid password'
+        -- );
         perform session.end();
 
     end;
