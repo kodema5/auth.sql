@@ -1,22 +1,31 @@
-\if :test
-\if :local
-drop schema if exists web cascade;
-\endif
-\endif
-create schema if not exists web;
+\if :{?auth_sql}
+\else
+\set auth_sql true
 
-\if :test
-\if :local
-drop schema if exists util cascade;
+drop schema if exists auth cascade;
+create schema if not exists auth;
+comment on schema auth is 'auth is for authentiction and authorization';
+
+create extension if not exists pgcrypto;
+
+\ir auth/test.sql
+\ir auth/util.sql
+
+\ir auth/env_t.sql
+\ir auth/setting_t.sql
+
+\ir auth/app.sql
+\ir auth/param.sql
+\ir auth/setting.sql
+\ir auth/auth.sql
+\ir auth/service.sql
+
+
+\ir auth/brand.sql
+\ir auth/user_type.sql
+\ir auth/user.sql
+\ir auth/session.sql
+
+\ir auth/web.sql
+
 \endif
-\endif
-create schema if not exists util;
-
-
-\ir src/user/mod.sql
-\ir src/session/mod.sql
-\ir src/setting/mod.sql
-
--- web interface
-\ir src/web/user/mod.sql
-\ir src/web/session/mod.sql
