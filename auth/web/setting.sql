@@ -4,105 +4,118 @@
 
 \ir ../setting.sql
 
-    create function auth.web_settings(jsonb)
-        returns jsonb
+    create function auth.web_settings(
+        jsonb,
+        jsonb default null,
+        out res jsonb,
+        out res_ jsonb
+    )
         language plpgsql
         security definer
-        strict
         set search_path=auth, public
     as $$
     declare
-        req jsonb = request_t($1, '{
+        req jsonb = web_request_t($1, $2, '{
             "is-sys"
-        }'::text[]);
+        }');
+        ret jsonb;
     begin
-        return response_t((
-            select jsonb_object_agg(a.setting_id, a)
-            from auth_.setting a
-        ));
+        ret = jsonb_object_agg(a.setting_id, a)
+            from auth_.setting a;
+
+        select *
+        from web_response_t(ret) into $3, $4;
     end;
     $$;
 
-    create function auth.web_setting_set(jsonb)
-        returns jsonb
-        language plpgsql
+
+    create function auth.web_setting_set(
+        jsonb,
+        jsonb default null,
+        out res jsonb,
+        out res_ jsonb
+    )
+        language sql
         security definer
-        strict
         set search_path=auth, public
     as $$
-    declare
-        req jsonb = request_t($1, '{
-            "is-sys"
-        }'::text[]);
-        a auth_.setting = setting(req);
-    begin
-        return response_t(set(a));
-    end;
+        select *
+        from web_response_t (
+            set (
+                setting (
+                    web_request_t($1, $2, '{
+                        "is-sys"
+                    }'))))
     $$;
 
-    create function auth.web_setting_delete(jsonb)
-        returns jsonb
-        language plpgsql
+
+    create function auth.web_setting_delete(
+        jsonb,
+        jsonb default null,
+        out res jsonb,
+        out res_ jsonb
+    )
+        language sql
         security definer
-        strict
         set search_path=auth, public
     as $$
-    declare
-        req jsonb = request_t($1, '{
-            "is-sys"
-        }'::text[]);
-    begin
-        return response_t(delete(setting(req->>'setting_id')));
-    end;
+        select *
+        from web_response_t (
+            delete (
+                setting (
+                    web_request_t($1, $2, '{
+                        "is-sys"
+                    }')->>'setting_id')))
     $$;
+
 
 \if :{?test}
-    create function tests.test_auth_web_setting_sql() returns setof text language plpgsql
-    set search_path=auth, public
+    create function tests.test_auth_web_setting_sql()
+        returns setof text
+        language plpgsql
+        set search_path=auth, public
     as $$
     declare
-        res jsonb;
-        a text;
+        head jsonb = web_headers_t_as('test#sys');
+        a jsonb;
+        t text;
     begin
-        res = web_setting_set(header_t_as('test::sys') ||
+        a = res from web_setting_set(
             '{
                 "typeof": "auth_.user",
-                "ref_id": "test::user",
+                "ref_id": "test#user",
                 "app_id": "auth",
                 "value": {
                     "sys_access":true
                 }
-            }');
-        a = res->>'setting_id';
-
-        res = web_settings(header_t_as('test::sys'));
+            }', head);
+        t = a->>'setting_id';
+        a = res from web_settings(null, head);
         return next ok(
-            res ? a and res->a->'value'->>'sys_access' = 'true',
+            a ? t and a->t->'value'->>'sys_access' = 'true',
             'can create setting');
 
-        res = web_setting_set(header_t_as('test::sys') ||
+        a = res from web_setting_set(
             ('{
-                "setting_id": "'|| a || '",
+                "setting_id": "'|| t || '",
                 "value": {
                     "sys_access":false
                 }
-            }')::jsonb);
-
-        res = web_settings(header_t_as('test::sys'));
+            }')::jsonb, head);
+        a = res from web_settings(null, head);
         return next ok(
-            res ? a and res->a->'value'->>'sys_access' = 'false',
+            a ? t and a->t->'value'->>'sys_access' = 'false',
             'can update setting');
 
-        res = web_setting_delete(header_t_as('test::sys') ||
+
+        a = res from web_setting_delete(
             ('{
-                "setting_id": "'|| a || '"
-            }')::jsonb);
-
-        res = web_settings(header_t_as('test::sys'));
+                "setting_id": "'|| t || '"
+            }')::jsonb, head);
+        a = res from web_settings(null, head);
         return next ok(
-            not (res ? a),
+            not (a ? t),
             'can delete setting');
-
 
     end;
     $$;

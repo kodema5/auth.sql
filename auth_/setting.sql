@@ -13,7 +13,7 @@
         unique(typeof, ref_id, app_id),
 
         setting_id text
-            generated always as (typeof || '::' || ref_id || '::' || app_id)
+            generated always as (typeof || '#' || ref_id || '#' || app_id)
             stored
             primary key,
 

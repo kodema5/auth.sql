@@ -10,7 +10,7 @@
         unique (brand_id, name),
 
         user_id text
-            generated always as (brand_id || '::' || name)
+            generated always as (brand_id || '#' || name)
             stored
             primary key,
 

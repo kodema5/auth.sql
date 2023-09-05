@@ -59,36 +59,37 @@
         is 'filter object without keys';
 
 
-    create function auth.filter(obj_ jsonb, regex_ text)
-        returns jsonb
-        language sql
-        security definer
-        stable
-        strict
-    as $$
-        select jsonb_object_agg(kv.key, kv.value)
-        from jsonb_each( obj_ ) kv
-        where kv.key ~* regex_
-    $$;
+    -- YAGNI
+    -- create function auth.filter(obj_ jsonb, regex_ text)
+    --     returns jsonb
+    --     language sql
+    --     security definer
+    --     stable
+    --     strict
+    -- as $$
+    --     select jsonb_object_agg(kv.key, kv.value)
+    --     from jsonb_each( obj_ ) kv
+    --     where kv.key ~* regex_
+    -- $$;
 
-    comment on function auth.filter(jsonb, text)
-        is 'filter object with regex key';
+    -- comment on function auth.filter(jsonb, text)
+    --     is 'filter object with regex key';
 
+    -- YAGNI
+    -- create function auth.except(obj_ jsonb, regex_ text)
+    --     returns jsonb
+    --     language sql
+    --     security definer
+    --     stable
+    --     strict
+    -- as $$
+    --     select jsonb_object_agg(kv.key, kv.value)
+    --     from jsonb_each( obj_ ) kv
+    --     where kv.key !~* regex_  -- filter out based on posix regex
+    -- $$;
 
-    create function auth.except(obj_ jsonb, regex_ text)
-        returns jsonb
-        language sql
-        security definer
-        stable
-        strict
-    as $$
-        select jsonb_object_agg(kv.key, kv.value)
-        from jsonb_each( obj_ ) kv
-        where kv.key !~* regex_  -- filter out based on posix regex
-    $$;
-
-    comment on function auth.filter(jsonb, text)
-        is 'filter object without regex key';
+    -- comment on function auth.except(jsonb, text)
+    --     is 'filter object without regex key';
 
 
     create aggregate auth.assign(jsonb) (

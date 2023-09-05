@@ -28,22 +28,22 @@
         ;
 
         insert into auth_.setting (typeof, ref_id, app_id, value)
-        values ('auth_.user_type', 'test::sys', 'auth', '{
+        values ('auth_.user_type', 'test#sys', 'auth', '{
             "sys_access":true
         }');
 
         insert into auth_.user (brand_id, name, user_type_id)
         values
-            ('test', 'user', 'test::user'),
-            ('test', 'admin', 'test::admin'),
-            ('test', 'sys', 'test::sys')
+            ('test', 'user', 'test#user'),
+            ('test', 'admin', 'test#admin'),
+            ('test', 'sys', 'test#sys')
         ;
 
         insert into auth_.user_ (user_id, password)
         values
-            ('test::user', crypt('test', gen_salt('bf'))),
-            ('test::admin', crypt('test', gen_salt('bf'))),
-            ('test::sys', crypt('test', gen_salt('bf')))
+            ('test#user', crypt('test', gen_salt('bf'))),
+            ('test#admin', crypt('test', gen_salt('bf'))),
+            ('test#sys', crypt('test', gen_salt('bf')))
         ;
         return next 'setup test';
     end;

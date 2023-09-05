@@ -5,7 +5,9 @@
 
 \ir env_t.sql
 
-    create function auth.auth(id text)
+    create function auth.auth(
+        id text
+    )
         returns auth_.auth
         language sql
         security definer
@@ -16,7 +18,9 @@
         where auth_id = id
     $$;
 
-    create function auth.auth(jsonb)
+    create function auth.auth(
+        jsonb
+    )
         returns auth_.auth
         language sql
         security definer
@@ -29,7 +33,9 @@
         )
     $$;
 
-    create function auth.set(auth_.auth)
+    create function auth.set(
+        auth_.auth
+    )
         returns auth_.auth
         language sql
         security definer
@@ -44,7 +50,9 @@
         returning *
     $$;
 
-    create function auth.delete(auth_.auth)
+    create function auth.delete(
+        auth_.auth
+    )
         returns auth_.auth
         language sql
         security definer
@@ -55,7 +63,9 @@
     $$;
 
 
-    create function auth.auth_paths(auth_ids text[])
+    create function auth.auth_paths(
+        auth_ids text[]
+    )
         returns jsonpath[]
         language sql
         security definer
@@ -75,7 +85,8 @@
 
     create function auth.has(
         auths text[],
-        obj_ jsonb default (auth.env_t()).setting)
+        obj_ jsonb default (auth.env_t()).setting
+    )
         returns boolean
         language sql
         security definer
@@ -85,14 +96,15 @@
     $$;
 
     create function auth.have(
-        auths text[],
-        obj_ jsonb default (auth.env_t()).setting)
+        auth_ids text[],
+        obj_ jsonb default (auth.env_t()).setting
+    )
         returns boolean
         language sql
         security definer
         stable
     as $$
-        select auth.have(obj_, auth.auth_paths(auths))
+        select auth.have(obj_, auth.auth_paths(auth_ids))
     $$;
 
 

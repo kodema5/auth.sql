@@ -17,6 +17,7 @@
         where brand_id = id
     $$;
 
+
     create function auth.brand(jsonb)
         returns auth_.brand
         language sql
@@ -25,10 +26,15 @@
     as $$
         select jsonb_populate_record(
             null::auth_.brand,
-            coalesce(to_jsonb(auth.brand($1->>'brand_id')), '{}') ||
-            $1
+            coalesce (
+                to_jsonb (
+                    auth.brand(
+                        $1->>'brand_id')),
+                    '{}')
+            || $1
         )
     $$;
+
 
     create function auth.set(auth_.brand)
         returns auth_.brand
@@ -39,13 +45,15 @@
         values (
             $1.brand_id,
             $1.name,
-            coalesce(auth.intersect(
-                $1.apps,
-                auth.app_ids() ),
+            coalesce(
+                auth.intersect(
+                    $1.apps,
+                    auth.app_ids() ),
                 '{}'),
-            coalesce(auth.intersect(
-                $1.services,
-                auth.service_ids() ),
+            coalesce(
+                auth.intersect(
+                    $1.services,
+                    auth.service_ids() ),
                 '{}')
         )
         on conflict (brand_id)

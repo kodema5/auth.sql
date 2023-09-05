@@ -73,7 +73,7 @@
         s auth_.session;
         e auth.env_t;
     begin
-        s = auth.session(auth.user('test::user'));
+        s = auth.session(auth.user('test#user'));
         e = auth.env_t(s);
         return next ok(not (e.session_id is null),
             'sets env_t');

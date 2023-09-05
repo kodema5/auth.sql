@@ -2,94 +2,108 @@
 \else
 \set auth_web_auth_sql true
 
-    create function auth.web_auths(jsonb)
-        returns jsonb
+    create function auth.web_auths(
+        jsonb,
+        jsonb default null,
+        out res jsonb,
+        out res_ jsonb
+    )
         language plpgsql
         security definer
-        strict
         set search_path=auth, public
     as $$
     declare
-        req jsonb = request_t($1, '{
+        req jsonb = web_request_t($1, $2, '{
             "is-sys"
-        }'::text[]);
-        res jsonb;
+        }');
+        ret jsonb;
     begin
-        res = jsonb_object_agg(a.auth_id, a)
+        ret = jsonb_object_agg(a.auth_id, a)
             from auth_.auth a;
 
-        return response_t(res);
-    end;
-    $$;
-
-    create function auth.web_auth_set(jsonb)
-        returns jsonb
-        language plpgsql
-        security definer
-        strict
-        set search_path=auth, public
-    as $$
-    declare
-        req jsonb = request_t($1, '{
-            "is-sys"
-        }'::text[]);
-        auth auth_.auth = auth(req);
-    begin
-        return response_t(set(auth));
+        select *
+        from web_response_t(ret) into $3, $4;
     end;
     $$;
 
 
-    create function auth.web_auth_delete(jsonb)
-        returns jsonb
-        language plpgsql
+    create function auth.web_auth_set(
+        jsonb,
+        jsonb default null,
+        out res jsonb,
+        out res_ jsonb
+    )
+        language sql
         security definer
-        strict
         set search_path=auth, public
     as $$
-    declare
-        req jsonb = request_t($1, '{
-            "is-sys"
-        }'::text[]);
-    begin
-        return response_t(delete(auth(req->>'auth_id')));
-    end;
+        select *
+        from web_response_t (
+            set (
+                auth (
+                    web_request_t($1, $2, '{
+                        "is-sys"
+                    }'))))
+    $$;
+
+
+    create function auth.web_auth_delete(
+        jsonb,
+        jsonb default null,
+        out res jsonb,
+        out res_ jsonb
+    )
+        language sql
+        security definer
+        set search_path=auth, public
+    as $$
+        select *
+        from web_response_t (
+            delete (
+                auth (
+                    web_request_t($1, $2, '{
+                        "is-sys"
+                    }')->>'auth_id')))
     $$;
 
 
 \if :{?test}
 
-    create function tests.test_auth_web_auth_sql() returns setof text language plpgsql
-    set search_path=auth, public
+    create function tests.test_auth_web_auth_sql()
+        returns setof text
+        language plpgsql
+        set search_path=auth, public
     as $$
     declare
-        res jsonb;
+        head jsonb = web_headers_t_as('test#sys');
+        a jsonb;
     begin
-        res = web_auth_set(
-            auth.header_t_as('test::sys') ||
+        a = res from web_auth_set(
             '{
                 "auth_id": "is-foo",
                 "path": "$.auth.is_foo"
-            }');
-        res = web_auths(header_t_as('test::sys'));
-        return next ok(res ? 'is-foo', 'can create auth');
+            }'::jsonb,
+            head);
+        a = res from web_auths('{}'::jsonb, head);
+        return next ok(a ? 'is-foo', 'can create auth');
 
-        res = web_auth_set(
-            auth.header_t_as('test::sys') ||
+        a = res from web_auth_set(
             '{
                 "auth_id": "is-foo",
                 "path": "$.auth.is_bar"
-            }');
-        res = web_auths(header_t_as('test::sys'));
-        return next ok(res->'is-foo'->>'path' = '$.auth.is_bar'::jsonpath::text, 'can update auth');
+            }'::jsonb,
+            head);
+        a = res from web_auths('{}'::jsonb, head);
+        return next ok(a->'is-foo'->>'path' = '$.auth.is_bar'::jsonpath::text, 'can update auth');
 
-        res = web_auth_delete(
-            auth.header_t_as('test::sys') ||
+
+        a = res from web_auth_delete(
             '{
                 "auth_id": "is-foo"
-            }');
-        res = web_auths(header_t_as('test::sys'));
-        return next ok(not (res ? 'is-foo'), 'can delete auth');
+            }'::jsonb,
+            head);
+        a = res from web_auths('{}'::jsonb, head);
+        return next ok(not (a ? 'is-foo'), 'can delete auth');
     end;
     $$;
 

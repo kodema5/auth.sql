@@ -2,102 +2,110 @@
 \else
 \set auth_web_app_sql true
 
-    create function auth.web_apps(jsonb)
-        returns jsonb
+    create function auth.web_apps(
+        jsonb,
+        jsonb default null,
+        out res jsonb,
+        out res_ jsonb
+    )
         language plpgsql
         security definer
-        strict
         set search_path=auth, public
     as $$
     declare
-        req jsonb = request_t($1, '{
+        req jsonb = web_request_t($1, $2, '{
             "is-sys"
-        }'::text[]);
-        res jsonb;
+        }');
+        ret jsonb;
     begin
-        res = jsonb_object_agg(a.app_id, a)
+        ret = jsonb_object_agg(a.app_id, a)
             from auth_.app a;
 
-        return response_t(res);
+        select * from web_response_t(ret) into $3, $4;
     end;
     $$;
 
-    comment on function auth.web_apps(jsonb)
+    comment on function auth.web_apps(jsonb, jsonb)
         is 'to find related apps';
 
 
-    create function auth.web_app_set(jsonb)
-        returns jsonb
-        language plpgsql
+    create function auth.web_app_set(
+        jsonb,
+        jsonb default null,
+        out res jsonb,
+        out res_ jsonb
+    )
+        language sql
         security definer
-        strict
         set search_path=auth, public
     as $$
-    declare
-        req jsonb = request_t($1, '{
-            "is-sys"
-        }'::text[]);
-        app auth_.app = app(req);
-    begin
-        return response_t(set(app));
-    end;
+        select *
+        from web_response_t (
+            set (
+                app (
+                    web_request_t($1, $2, '{
+                        "is-sys"
+                    }'))))
     $$;
 
-    comment on function auth.web_app_set(jsonb)
+    comment on function auth.web_app_set(jsonb, jsonb)
         is 'sets an app (auth_.app).';
 
 
-    create function auth.web_app_delete(jsonb)
-        returns jsonb
-        language plpgsql
+    create function auth.web_app_delete(
+        jsonb,
+        jsonb default null,
+        out res jsonb,
+        out res_ jsonb
+    )
+        language sql
         security definer
-        strict
         set search_path=auth, public
     as $$
-    declare
-        req jsonb = request_t($1, '{
-            "is-sys"
-        }'::text[]);
-    begin
-        return response_t(delete(app(req->>'app_id')));
-    end;
+        select *
+        from web_response_t (
+            delete(
+                app(
+                    web_request_t($1, $2, '{
+                        "is-sys"
+                    }')->>'app_id')))
     $$;
 
-    comment on function auth.web_app_delete(jsonb)
+    comment on function auth.web_app_delete(jsonb, jsonb)
         is 'deletes an app (auth_.app).';
+
 
 \if :{?test}
 
-    create function tests.test_auth_web_app_sql() returns setof text language plpgsql
-    set search_path=auth, public
+    create function tests.test_auth_web_app_sql()
+        returns setof text
+        language plpgsql
+        set search_path=auth, public
     as $$
     declare
-        res jsonb;
+        head jsonb = web_headers_t_as('test#sys');
+        a jsonb;
     begin
-        res = web_apps(header_t_as('test::sys'));
+        a = res from web_apps('{}'::jsonb, head);
         return next ok(
-            res ? 'auth' and res ? 'test',
+            a ? 'auth' and a ? 'test',
             'has applications');
 
-        res = web_app_set(
-            auth.header_t_as('test::sys') ||
+        a = res from web_app_set(
             '{
                 "app_id": "test2",
                 "name": "test2"
-            }');
+            }'::jsonb, head);
         -- call auth.debug(res);
+        a = res from web_apps('{}'::jsonb, head);
+        return next ok(a ? 'test2', 'can create an app');
 
-        res = web_apps(header_t_as('test::sys'));
-        return next ok(res ? 'test2', 'can create an app');
-
-        res = web_app_delete(
-            auth.header_t_as('test::sys') ||
+        a = res from web_app_delete(
             '{
                 "app_id": "test2"
-            }');
-
-        res = web_apps(header_t_as('test::sys'));
-        return next ok(not (res ? 'test2'), 'can delete an app');
+            }'::jsonb, head);
+        a = res from web_apps('{}'::jsonb, head);
+        return next ok(not (a ? 'test2'), 'can delete an app');
     end;
     $$;
 

@@ -2,89 +2,104 @@
 \else
 \set auth_web_service_sql true
 
-    create function auth.web_services(jsonb)
-        returns jsonb
+    create function auth.web_services(
+        jsonb,
+        jsonb default null,
+        out res jsonb,
+        out res_ jsonb
+    )
         language plpgsql
         security definer
-        strict
         set search_path=auth, public
     as $$
     declare
-        req jsonb = request_t($1, '{
+        req jsonb = web_request_t($1, $2, '{
             "is-sys"
-        }'::text[]);
-        res jsonb;
+        }');
+        ret jsonb;
     begin
-        res = jsonb_object_agg(a.service_id, a)
+        ret = coalesce(
+                jsonb_object_agg(a.service_id, a),
+                '{}')
             from auth_.service a;
 
-        return response_t(res);
+        select *
+        from web_response_t(ret) into $3, $4;
     end;
     $$;
 
-    create function auth.web_service_set(jsonb)
-        returns jsonb
-        language plpgsql
+
+    create function auth.web_service_set(
+        jsonb,
+        jsonb default null,
+        out res jsonb,
+        out res_ jsonb
+    )
+        language sql
         security definer
-        strict
         set search_path=auth, public
     as $$
-    declare
-        req jsonb = request_t($1, '{
-            "is-sys"
-        }'::text[]);
-        svc auth_.service = service(req);
-    begin
-        return response_t(set(svc));
-    end;
+        select *
+        from web_response_t (
+            set (
+                service (
+                    web_request_t($1, $2, '{
+                        "is-sys"
+                    }'))))
     $$;
 
-    create function auth.web_service_delete(jsonb)
-        returns jsonb
-        language plpgsql
+    create function auth.web_service_delete(
+        jsonb,
+        jsonb default null,
+        out res jsonb,
+        out res_ jsonb
+    )
+        language sql
         security definer
-        strict
         set search_path=auth, public
     as $$
-    declare
-        req jsonb = request_t($1, '{
-            "is-sys"
-        }'::text[]);
-    begin
-        return response_t(delete(service(req->>'service_id')));
-    end;
+        select *
+        from web_response_t (
+            delete (
+                service (
+                    web_request_t($1, $2, '{
+                        "is-sys"
+                    }')->>'service_id')))
+
     $$;
 
 \if :{?test}
 
-    create function tests.test_auth_web_service_sql() returns setof text language plpgsql
-    set search_path=auth, public
+    create function tests.test_auth_web_service_sql()
+        returns setof text
+        language plpgsql
+        set search_path=auth, public
     as $$
     declare
-        res jsonb;
+        head jsonb = web_headers_t_as('test#sys');
+        a jsonb;
     begin
-        res = web_service_set(header_t_as('test::sys') || '{
+        a = res from web_service_set('{
             "service_id":"foo",
             "name":"bar"
-        }');
-        res = web_services(header_t_as('test::sys'));
-        return next ok(res ? 'foo', 'can create service');
+        }', head);
+        a = res from web_services(null, head);
+        return next ok(a ? 'foo', 'can create service');
 
 
-        res = web_service_set(header_t_as('test::sys') || '{
+        a = res from web_service_set('{
             "service_id":"foo",
             "name":"baz"
-        }');
-        res = web_services(header_t_as('test::sys'));
-        return next ok(res -> 'foo' ->>'name' = 'baz', 'can delete service');
+        }', head);
+        a = res from web_services(null, head);
+        return next ok(a -> 'foo' ->>'name' = 'baz', 'can delete service');
 
 
-        res = web_service_delete(header_t_as('test::sys') || '{
+        a = res from web_service_delete('{
             "service_id":"foo"
-        }');
-        res = web_services(header_t_as('test::sys'));
-        return next ok(not (res ? 'foo'), 'can delete service');
-
+        }', head);
+        a = res from web_services(null, head);
+        return next ok(not (a ? 'foo'), 'can delete service');
     end;
     $$;
 

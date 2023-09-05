@@ -10,7 +10,7 @@
         unique (app_id, name),
 
         param_id text
-            generated always as (app_id || '::' || name)
+            generated always as (app_id || '#' || name)
             stored
             primary key,
 

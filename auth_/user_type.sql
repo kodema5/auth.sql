@@ -11,7 +11,7 @@
         unique (brand_id, name),
 
         user_type_id text
-            generated always as (brand_id || '::' || name) stored
+            generated always as (brand_id || '#' || name) stored
             primary key,
 
         apps text[], -- auth_.app_id[], a subset of brand.apps
