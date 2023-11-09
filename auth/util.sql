@@ -6,6 +6,6 @@
 \ir util/array.sql
 \ir util/debug.sql
 \ir util/jsonb.sql
-\ir util/jsonpath.sql
+-- \ir util/jsonpath.sql
 
 \endif

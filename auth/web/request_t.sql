@@ -46,9 +46,9 @@
 
         <<check_auth_ids>>
         declare
-            arr jsonpath[] = auth.auth_paths(auth_ids);
+            arr jsonpath[] = auth.auth_jsonpaths(auth_ids);
         begin
-            if arr is null or cardinality(arr) = 0 or auth.have(env.setting, arr) then
+            if arr is null or cardinality(arr) = 0 or auth.has_all(env.setting, arr) then
                 exit check_auth_ids;
             end if;
 

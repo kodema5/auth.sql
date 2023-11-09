@@ -18,6 +18,7 @@ create extension if not exists pgcrypto;
 \ir auth/param.sql
 \ir auth/setting.sql
 \ir auth/auth.sql
+\ir auth/has.sql
 \ir auth/service.sql
 
 
